@@ -32,8 +32,8 @@ def run_once(playwright: Playwright, question: str) -> None:
     page.get_by_role("button").nth(4).click()
 
     # 等待元素加载，设置超时时间为100秒(100000毫秒)
-    page.wait_for_selector(
-        "div.ds-flex > div.ds-flex > div.ds-icon-button", # waiting til the share button available
+    share_element = page.wait_for_selector(
+        "div.ds-flex > div.ds-flex > div.ds-icon-button:last-child", # waiting til the share button available
         timeout=100000  # 100秒超时
     )
     # ds-icon-button _7436101 bcc55ca1 ds-icon-button--disabled
@@ -77,7 +77,14 @@ def run_once(playwright: Playwright, question: str) -> None:
             dict_['title'] = title
             dict_['url'] = url
             list_.append(dict_)
-        dict_final['list'] = list_
+
+    share_element.click()
+    page.wait_for_selector(".ds-basic-button--primary").click()
+    page.wait_for_selector(".ds-modal-content__footer button").click()
+    share_link = page.query_selector('.ds-modal-content__footer').text_content().strip()
+    dict_final['list'] = list_
+    dict_final['share_link'] = share_link
+
     return  dict_final
 
 if __name__ == '__main__':
