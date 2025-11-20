@@ -1,24 +1,35 @@
-import os
-import re
 import time
 
-from playwright.sync_api import Playwright, sync_playwright, expect
+from playwright.sync_api import Playwright, sync_playwright
 import crawler_util
-from http.cookies import SimpleCookie
-from playwright_stealth import stealth_sync
 
-def ini_button(page, css_class):
-    button = page.wait_for_selector(
-        selector=css_class,
-        timeout=5000  # 超时时间：5000毫秒（5秒）
-    )
-    button.click()
+share_id = None
+
+def handle_response(response):
+    global share_id
+    print(response.url)
+    #https://chatgpt.com/backend-api/share/post
+    #https://chatgpt.com/backend-api/share/create
+    #https://chatgpt.com/s/t_691edd5140b88191a60d1d0833fb4c8c
+    if "/share/" in response.url and response.status == 200 :
+        print(f"Intercepted API response: {response.url}")
+        try:
+            res = response.json()
+            if res:
+                if 'share_id' in res:
+                    share_id = res['share_id']
+                else:
+                    data = res['post']
+                    if data and 'id' in data:
+                        share_id = data['id']
+        except Exception as e:
+            print(e)
+
 
 def run_once(playwright: Playwright, question: str) -> None:
+    global share_id
     # browser = playwright.chromium.launch(headless=False)
     # context = browser.new_context()
-
-
 
     # cookies_to_set = [
     #     {
@@ -39,19 +50,13 @@ def run_once(playwright: Playwright, question: str) -> None:
     default_context = browser.contexts[0]
     page = default_context.pages[0]
 
-
-
     # context = browser.new_context(storage_state="chatgpt.json")
     # page = context.new_page()
     # stealth_sync(page)
     page.goto("https://chatgpt.com/")
+    page.on("response", handle_response)  # Register the handler
 
     model_name = 'Thinking'
-    deep_think = True
-    internet_search = True
-    internet_search_name = 'Auto'
-
-
 
     crawler_util.select_drop_down_item(page,
                                        '#composer-plus-btn',
@@ -101,6 +106,7 @@ def run_once(playwright: Playwright, question: str) -> None:
 
         time.sleep(1)
         page.screenshot(path="full_page.png", full_page=True)
+
         # 遍历a标签，提取链接和标题
         for a_tag in a_tags:
             # 提取链接：a标签的href属性
@@ -113,6 +119,19 @@ def run_once(playwright: Playwright, question: str) -> None:
             dict_['url'] = url
             list_.append(dict_)
         dict_final['list'] = list_
+
+    page.wait_for_selector('[aria-label="Share"]').click()
+    page.wait_for_selector('button.relative .pointer-events-none').click()
+
+    for _ in range(1, 5):
+        if share_id:
+            break
+        else:
+            time.sleep(1)
+
+    if share_id:
+        share_link = f'https://yb.tencent.com/s/{share_id}'
+        dict_final['share_link'] = share_link
 
 
     return  dict_final

@@ -12,6 +12,7 @@ import crawler_util
 
 
 history_data = None
+share_link = None
 
 def ini_button(page, css_class):
     button = page.wait_for_selector(
@@ -21,19 +22,20 @@ def ini_button(page, css_class):
     button.click()
 
 def handle_response(response):
-    global history_data
-    if "aichat/api/conversation" in response.url and response.status == 200 :
+    global share_link
+    # https://chat.baidu.com/aichat/api/shortURL
+    if "aichat/api/shortURL" in response.url and response.status == 200 :
         print(f"Intercepted API response: {response.url}")
-
         try:
-            # body = response.body()
-            res = response.text()
-            for line in res.split("\n"):
-                if '"referenceList":' in line:
-                    history_data = json.loads(line.lstrip('data:'))
+            res = response.json()
+            if res:
+                data = res['data']
+                if data and 'short_url' in data:
+                    share_link = data['short_url']
         except Exception as e:
             print(e)
             print('######')
+
 
 async def stream_events(url, headers, json_data):
     global history_data
@@ -65,18 +67,19 @@ def handle_request(request):
 
 def run_once(playwright: Playwright, question: str) -> None:
     global history_data
+    global share_link
+
     browser = playwright.chromium.launch(headless=False)
     context = browser.new_context()
     # context = browser.new_context(storage_state="baidu.json")
     page = context.new_page()
-    # page.on("response", handle_response)  # Register the handler
     page.on("request", handle_request)  # Register the handler
 
     page.goto("https://chat.baidu.com/search")
+    page.on("response", handle_response)  # Register the handler
 
-
-    all_requests = []
-    page.on("request", lambda request: all_requests.append(request.url))
+    # all_requests = []
+    # page.on("request", lambda request: all_requests.append(request.url))
 
 
     deep_think = True
@@ -107,7 +110,7 @@ def run_once(playwright: Playwright, question: str) -> None:
     page.locator("#chat-submit-button-ai").click()
 
     # 等待元素加载，设置超时时间为100秒(100000毫秒)
-    element = page.wait_for_selector(
+    page.wait_for_selector(
         ".cs-answer-hover-menu-container .cos-icon-exchange", # waiting til the share button available
         timeout=100000  # 100秒超时
     )
@@ -116,7 +119,9 @@ def run_once(playwright: Playwright, question: str) -> None:
 
     entrys = page.query_selector_all('.ai-entry .ai-entry-block')
     entrys.pop(0) # ignore first div infomation
-    element = page.query_selector('[data-show-ext*="answer_origin_button"]')
+
+    element = page.wait_for_selector('[data-show-ext*="answer_origin_button"]', timeout=5000)
+
     # 获取元素的文本内容（不包含 HTML 标签）
     article = '\n'.join([e.inner_text() for e in entrys])
 
@@ -125,15 +130,27 @@ def run_once(playwright: Playwright, question: str) -> None:
     dict_final['article'] = article
     list_ = []
 
+    if element:
+        element.click()
+        time.sleep(1)
 
+    page.screenshot(path="full_page.png", full_page=True)
 
-    page.wait_for_selector(
-        ".cs-answer-hover-menu-container .cos-icon-exchange",  # waiting til the share button available
-        timeout=100000  # 100秒超时
+    page.wait_for_selector('[data-show-ext*="share"]', timeout=2000).click()
+    time.sleep(1)
+    copy_button = page.get_by_role(
+        "button",
+        name="复制链接",  # 匹配按钮内的文本
+        exact=True  # 精确匹配文本，避免模糊匹配其他按钮
     )
 
-    page.wait_for_selector('[data-show-ext*="answer_origin_button"]',timeout=2000).click()
-    page.screenshot(path="full_page.png", full_page=True)
+    copy_button.wait_for(state="visible")
+    for i in range(1,5):
+        if share_link:
+            break
+        else:
+            time.sleep(i)
+        copy_button.click()
 
     if history_data:
         rs = crawler_util.find_key_in_json(history_data, "referenceList")
@@ -143,12 +160,15 @@ def run_once(playwright: Playwright, question: str) -> None:
             dict_['url'] = r.get('url')
             list_.append(dict_)
 
+    if share_link:
+        dict_final['share_link'] = share_link
+
     dict_final['list'] = list_
     return  dict_final
 
 if __name__ == '__main__':
 
     with sync_playwright() as playwright:
-        question = "给出2025年9月22号，食品安全相关的负面新闻有哪些，给出标题和链接。"
+        question = "浙江省委书记一连用了6个最"
         dict_final = run_once(playwright, question)
         print(dict_final)

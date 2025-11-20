@@ -1,7 +1,11 @@
 import re
+import time
+
 from playwright.sync_api import Playwright, sync_playwright, expect
 import crawler_util
 
+
+share_id = None
 
 def ini_button(page, css_class):
     button = page.wait_for_selector(
@@ -10,20 +14,31 @@ def ini_button(page, css_class):
     )
     button.click()
 
+def handle_response(response):
+    global share_id
+    #https://yuanbao.tencent.com/api/conversations/v2/share
+    if "api/conversations/v2/share" in response.url and response.status == 200 :
+        print(f"Intercepted API response: {response.url}")
+        try:
+            res = response.json()
+            if res:
+                data = res['data']
+                if data and 'pre_share_id' in data:
+                    share_id = data['pre_share_id']
+                if data and 'share_id' in data:
+                    share_id = data['share_id']
+        except Exception as e:
+            print(e)
+
 def run_once(playwright: Playwright, question: str) -> None:
+    global share_id
     browser = playwright.chromium.launch(headless=False)
     # context = browser.new_context()
-    context = browser.new_context(storage_state="yuanbao.json")
+    context = browser.new_context(storage_state="cookies/yuanbao/yuanbao_1.json")
     page = context.new_page()
     page.goto("https://yuanbao.tencent.com/")
-
-    # page.on("dialog", lambda dialog: dialog.accept())
-    try:
-        guide_button = page.wait_for_selector('[dt-mod-id="search_guide_pop"]',timeout=8000)
-        if guide_button.is_visible():
-            page.query_selector('.style__text-area__edit___ZDM4b').dblclick()  # 解决打开页面时出现弹窗问题
-    except Exception as e:
-        print(e)
+    page.on("response", handle_response)  # Register the handler
+    page.on("dialog", lambda dialog: dialog.accept())
 
     model_name = 'DeepSeek'
     deep_think = True
@@ -101,7 +116,16 @@ def run_once(playwright: Playwright, question: str) -> None:
             dict_['title'] = title
             dict_['url'] = url
             list_.append(dict_)
-        dict_final['list'] = list_
+            dict_final['list'] = list_
+
+        page.wait_for_selector('.agent-chat__toolbar_new .agent-chat__toolbar__share').click()
+        page.wait_for_selector('.agent-chat__share-bar__content__center .agent-chat__share-bar__item__logo:first-child').click()
+        time.sleep(1)
+
+    if share_id:
+        share_link = f'https://yb.tencent.com/s/{share_id}'
+        dict_final['share_link'] = share_link
+
     return  dict_final
 
 if __name__ == '__main__':

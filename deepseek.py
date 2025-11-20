@@ -17,7 +17,7 @@ def ini_button(page, name):
 def run_once(playwright: Playwright, question: str) -> None:
     browser = playwright.chromium.launch(headless=False)
     # context = browser.new_context()
-    context = browser.new_context(storage_state="auth.json")
+    context = browser.new_context(storage_state="cookies/deepseek/deepseek.json")
     page = context.new_page()
     page.goto("https://chat.deepseek.com/")
     # page.wait_for_timeout(2000)
@@ -78,6 +78,7 @@ def run_once(playwright: Playwright, question: str) -> None:
             dict_['url'] = url
             list_.append(dict_)
 
+    #share link from api https://chat.deepseek.com/api/v0/share/create
     share_element.click()
     page.wait_for_selector(".ds-basic-button--primary").click()
     page.wait_for_selector(".ds-modal-content__footer button").click()
