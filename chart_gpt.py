@@ -7,14 +7,14 @@ share_id = None
 
 def handle_response(response):
     global share_id
-    print(response.url)
     #https://chatgpt.com/backend-api/share/post
     #https://chatgpt.com/backend-api/share/create
     #https://chatgpt.com/s/t_691edd5140b88191a60d1d0833fb4c8c
-    if "/share/" in response.url and response.status == 200 :
+    if "/share/create" in response.url and response.status == 200 :
         print(f"Intercepted API response: {response.url}")
         try:
             res = response.json()
+            # print(res)
             if res:
                 if 'share_id' in res:
                     share_id = res['share_id']
@@ -46,9 +46,12 @@ def run_once(playwright: Playwright, question: str) -> None:
     # context.add_cookies(cookies_to_set)
     # /Applications/Google\ Chrome.app/Contents/MacOS/Google\ Chrome --remote-debugging-port=9222 --user-data-dir=foo
     browser = playwright.chromium.connect_over_cdp("http://127.0.0.1:9222")
-    browser.new_context(storage_state="chatgpt.json")
+    browser.new_context(storage_state="cookies/chatgpt/chatgpt.json")
     default_context = browser.contexts[0]
-    page = default_context.pages[0]
+    if len(default_context.pages) > 0:
+        page = default_context.pages[0]
+    else:
+        page = default_context.new_page()
 
     # context = browser.new_context(storage_state="chatgpt.json")
     # page = context.new_page()
@@ -130,7 +133,7 @@ def run_once(playwright: Playwright, question: str) -> None:
             time.sleep(1)
 
     if share_id:
-        share_link = f'https://yb.tencent.com/s/{share_id}'
+        share_link = f'https://chatgpt.com/share/{share_id}'
         dict_final['share_link'] = share_link
 
 
