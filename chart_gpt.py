@@ -126,11 +126,11 @@ def run_once(playwright: Playwright, question: str) -> None:
     page.wait_for_selector('[aria-label="Share"]').click()
     page.wait_for_selector('button.relative .pointer-events-none').click()
 
-    for _ in range(1, 5):
+    for i in range(1, 5):
         if share_id:
             break
         else:
-            time.sleep(1)
+            time.sleep(i)
 
     if share_id:
         share_link = f'https://chatgpt.com/share/{share_id}'

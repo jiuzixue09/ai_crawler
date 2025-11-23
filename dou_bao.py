@@ -94,8 +94,13 @@ def run_once(playwright: Playwright, question: str) -> None:
         except Exception as e:
             print(e)
 
+    for i in range(1, 5):
+        if share_id:
+            break
+        else:
+            time.sleep(i)
+
     # page.wait_for_selector('.pointer-events-auto [data-testid="thread_share_copy_btn"]').click()
-    time.sleep(1)
 
     # # 展开深度思考结果
     # page.wait_for_selector('[data-testid="collapse_button"]', timeout=10000).click()

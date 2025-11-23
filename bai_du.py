@@ -150,7 +150,7 @@ def run_once(playwright: Playwright, question: str) -> None:
             break
         else:
             time.sleep(i)
-        copy_button.click()
+            copy_button.click()
 
     if history_data:
         rs = crawler_util.find_key_in_json(history_data, "referenceList")

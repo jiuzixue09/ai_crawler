@@ -22,11 +22,14 @@ def handle_response(response):
         try:
             res = response.json()
             if res:
-                data = res['data']
-                if data and 'pre_share_id' in data:
-                    share_id = data['pre_share_id']
-                if data and 'share_id' in data:
-                    share_id = data['share_id']
+                if 'shareId' in res:
+                    share_id = res['shareId']
+                else:
+                    data = res['data']
+                    if data and 'pre_share_id' in data:
+                        share_id = data['pre_share_id']
+                    if data and 'share_id' in data:
+                        share_id = data['share_id']
         except Exception as e:
             print(e)
 
@@ -119,8 +122,14 @@ def run_once(playwright: Playwright, question: str) -> None:
             dict_final['list'] = list_
 
         page.wait_for_selector('.agent-chat__toolbar_new .agent-chat__toolbar__share').click()
-        page.wait_for_selector('.agent-chat__share-bar__content__center .agent-chat__share-bar__item__logo:first-child').click()
-        time.sleep(1)
+        copy_button = page.wait_for_selector('.agent-chat__share-bar__content__center .agent-chat__share-bar__item__logo:first-child')
+
+        for i in range(1, 5):
+            if share_id:
+                break
+            else:
+                time.sleep(i)
+                copy_button.click()
 
     if share_id:
         share_link = f'https://yb.tencent.com/s/{share_id}'
