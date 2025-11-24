@@ -65,7 +65,7 @@ def handle_request(request):
             print(f"An unexpected error occurred: {e}")
 
 
-def run_once(playwright: Playwright, question: str) -> None:
+def run_once(playwright: Playwright, question: str) -> dict:
     global history_data
     global share_link
 
@@ -120,7 +120,12 @@ def run_once(playwright: Playwright, question: str) -> None:
     entrys = page.query_selector_all('.ai-entry .ai-entry-block')
     entrys.pop(0) # ignore first div infomation
 
-    element = page.wait_for_selector('[data-show-ext*="answer_origin_button"]', timeout=5000)
+    try:
+        element = page.wait_for_selector('[data-show-ext*="answer_origin_button"]', timeout=5000)
+        element.click()
+        time.sleep(1)
+    except Exception as e:
+        print(e)
 
     # 获取元素的文本内容（不包含 HTML 标签）
     article = '\n'.join([e.inner_text() for e in entrys])
@@ -129,10 +134,6 @@ def run_once(playwright: Playwright, question: str) -> None:
     dict_final['status']  = '0'
     dict_final['article'] = article
     list_ = []
-
-    if element:
-        element.click()
-        time.sleep(1)
 
     page.screenshot(path="full_page.png", full_page=True)
 

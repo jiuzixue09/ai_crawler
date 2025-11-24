@@ -26,7 +26,7 @@ def handle_response(response):
             print(e)
 
 
-def run_once(playwright: Playwright, question: str) -> None:
+def run_once(playwright: Playwright, question: str) -> dict:
     global share_id
     # browser = playwright.chromium.launch(headless=False)
     # context = browser.new_context()

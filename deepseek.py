@@ -14,7 +14,7 @@ def ini_button(page, name):
     if not is_state:
         button.click()
 
-def run_once(playwright: Playwright, question: str) -> None:
+def run_once(playwright: Playwright, question: str) -> dict:
     browser = playwright.chromium.launch(headless=False)
     # context = browser.new_context()
     context = browser.new_context(storage_state="cookies/deepseek/deepseek.json")
@@ -49,40 +49,43 @@ def run_once(playwright: Playwright, question: str) -> None:
     dict_final['status']  = '0'
     dict_final['article'] = article
     list_ = []
-    element = page.locator(
-        "div.ds-scroll-area div.ds-message > div"
-    ).last
+    source_element = page.locator(
+        "div.ds-scroll-area div.ds-message > div > div:has(.site_logo_back)"
+    )
 
-    if element:
-        element.click()
-        # 3. 5秒内等待 div.dc433409 加载，超时则抛TimeoutError
-        target_div = page.wait_for_selector(
-            selector="div.scrollable div.ds-scroll-area",  # 目标元素选择器
-            timeout=5000  # 超时时间：5000毫秒（5秒）
-        )
+    if source_element and source_element.last.is_visible():
+        try:
+            source_element.last.click()
+            target_div = page.wait_for_selector(
+                selector="div.scrollable div.ds-scroll-area",  # 目标元素选择器
+                timeout=5000  # 超时时间：5000毫秒（5秒）
+            )
 
-        page.screenshot(path="full_page.png", full_page=True)
+            page.screenshot(path="full_page.png", full_page=True)
 
-        # 定位目标div下所有 <a> 标签（即包含链接和标题的标签）
-        a_tags = target_div.query_selector_all("div a")  # 仅查询该div内部的a标签
+            # 定位目标div下所有 <a> 标签（即包含链接和标题的标签）
+            a_tags = target_div.query_selector_all("div a")  # 仅查询该div内部的a标签
 
-        # 遍历a标签，提取链接和标题
-        for a_tag in a_tags:
-            # 提取链接：a标签的href属性
-            url = a_tag.get_attribute("href")
-            # 提取标题：a标签内 class="search-view-card__title" 的div文本（标题容器）
-            title_elem = a_tag.query_selector("div.search-view-card__title")  # 定位标题元素
-            title = title_elem.text_content().strip() if title_elem else "无标题"  # 处理标题为空的情况
-            dict_ = {}
-            dict_['title'] = title
-            dict_['url'] = url
-            list_.append(dict_)
+            # 遍历a标签，提取链接和标题
+            for a_tag in a_tags:
+                # 提取链接：a标签的href属性
+                url = a_tag.get_attribute("href")
+                # 提取标题：a标签内 class="search-view-card__title" 的div文本（标题容器）
+                title_elem = a_tag.query_selector("div.search-view-card__title")  # 定位标题元素
+                title = title_elem.text_content().strip() if title_elem else "无标题"  # 处理标题为空的情况
+                dict_ = {}
+                dict_['title'] = title
+                dict_['url'] = url
+                list_.append(dict_)
+        except Exception as e:
+            print(e)
 
     #share link from api https://chat.deepseek.com/api/v0/share/create
     share_element.click()
-    page.wait_for_selector(".ds-basic-button--primary").click()
-    page.wait_for_selector(".ds-modal-content__footer button").click()
-    share_link = page.query_selector('.ds-modal-content__footer').text_content().strip()
+    page.wait_for_selector(".ds-basic-button--primary").click(timeout=2000)
+    page.wait_for_selector(".ds-modal-content__footer button").click(timeout=2000)
+    time.sleep(1)
+    share_link = page.query_selector('.ds-modal-content__footer span').text_content().strip()
     dict_final['list'] = list_
     dict_final['share_link'] = share_link
 
@@ -90,6 +93,7 @@ def run_once(playwright: Playwright, question: str) -> None:
 
 if __name__ == '__main__':
     with sync_playwright() as playwright:
-        question = "给出2025年9月22号，食品安全相关的负面新闻有哪些，给出标题和链接。"
+        question = "消费者对智能驾驶系统的信任度如何建立？"
+        # question = "消费者对新能源汽车的续航焦虑如何缓解？"
         dict_final = run_once(playwright, question)
         print(dict_final)

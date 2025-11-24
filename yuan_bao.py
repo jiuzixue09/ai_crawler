@@ -4,8 +4,8 @@ import time
 from playwright.sync_api import Playwright, sync_playwright, expect
 import crawler_util
 
-
 share_id = None
+
 
 def ini_button(page, css_class):
     button = page.wait_for_selector(
@@ -14,10 +14,11 @@ def ini_button(page, css_class):
     )
     button.click()
 
+
 def handle_response(response):
     global share_id
-    #https://yuanbao.tencent.com/api/conversations/v2/share
-    if "api/conversations/v2/share" in response.url and response.status == 200 :
+    # https://yuanbao.tencent.com/api/conversations/v2/share
+    if "api/conversations/v2/share" in response.url and response.status == 200:
         print(f"Intercepted API response: {response.url}")
         try:
             res = response.json()
@@ -33,7 +34,8 @@ def handle_response(response):
         except Exception as e:
             print(e)
 
-def run_once(playwright: Playwright, question: str) -> None:
+
+def run_once(playwright: Playwright, question: str) -> dict:
     global share_id
     browser = playwright.chromium.launch(headless=False)
     # context = browser.new_context()
@@ -53,7 +55,6 @@ def run_once(playwright: Playwright, question: str) -> None:
                                        'div.drop-down-item__name',
                                        model_name)
 
-
     deep_think_button = page.wait_for_selector('[dt-button-id="deep_think"]', timeout=10000)
     if deep_think and 'checked' not in deep_think_button.get_attribute("class").strip():
         deep_think_button.click()
@@ -61,7 +62,6 @@ def run_once(playwright: Playwright, question: str) -> None:
     online_search_button = page.wait_for_selector('[dt-button-id="online_search"]', timeout=10000)
     if internet_search and 'checked' not in online_search_button.get_attribute("class").strip():
         online_search_button.click()
-
 
     crawler_util.select_drop_down_item(page,
                                        'div.yb-switch-internet-search-btn__right',
@@ -74,23 +74,25 @@ def run_once(playwright: Playwright, question: str) -> None:
     page.wait_for_timeout(100)
     page.locator("#yuanbao-send-btn").click()
 
-    # 等待元素加载，设置超时时间为100秒(100000毫秒)
-    element = page.wait_for_selector(
-        ".agent-chat__search-guid-tool__source", # waiting til the share button available
-        timeout=100000  # 100秒超时
-    )
-    # ds-icon-button _7436101 bcc55ca1 ds-icon-button--disabled
+    share_button = page.wait_for_selector('.agent-chat__toolbar_new .agent-chat__toolbar__share', timeout=100 * 1000)
+
     markdown_divs = page.locator('div.hyc-component-reasoner__text')
+    if not markdown_divs.is_visible():
+        markdown_divs = page.locator('.hyc-component-deepsearch-cot > .hyc-content-md-done')
 
     # 获取第二个元素的文本内容（不包含 HTML 标签）
     article = markdown_divs.inner_text()
 
-    dict_final = {}
-    dict_final['status']  = '0'
-    dict_final['article'] = article
+    dict_final = {'status': '0', 'article': article}
     list_ = []
 
-    if element:
+    element = page.locator(".agent-chat__search-guid-tool__source")
+    try:
+        element.wait_for(state='visible', timeout=60 * 1000) #这行代码主要是让程序休眠时间一段时间，防止账号被封
+    except Exception as e:
+        print(e)
+
+    if element and element.is_visible():
         element.click()
         # 3. 5秒内等待 div.dc433409 加载，超时则抛TimeoutError
         target_div = page.wait_for_selector(
@@ -121,25 +123,26 @@ def run_once(playwright: Playwright, question: str) -> None:
             list_.append(dict_)
             dict_final['list'] = list_
 
-        page.wait_for_selector('.agent-chat__toolbar_new .agent-chat__toolbar__share').click()
-        copy_button = page.wait_for_selector('.agent-chat__share-bar__content__center .agent-chat__share-bar__item__logo:first-child')
+    share_button.click()
+    copy_button = page.wait_for_selector(
+        '.agent-chat__share-bar__content__center .agent-chat__share-bar__item__logo:first-child')
 
-        for i in range(1, 5):
-            if share_id:
-                break
-            else:
-                time.sleep(i)
-                copy_button.click()
+    for i in range(1, 5):
+        if share_id:
+            break
+        else:
+            time.sleep(i)
+            copy_button.click()
 
     if share_id:
         share_link = f'https://yb.tencent.com/s/{share_id}'
         dict_final['share_link'] = share_link
 
-    return  dict_final
+    return dict_final
+
 
 if __name__ == '__main__':
-
     with sync_playwright() as playwright:
-        question = "给出2025年9月22号，食品安全相关的负面新闻有哪些，给出标题和链接。"
-        dict_final = run_once(playwright, question)
-        print(dict_final)
+        question = "消费者对新能源汽车的续航焦虑如何缓解？"
+        rs = run_once(playwright, question)
+        print(rs)

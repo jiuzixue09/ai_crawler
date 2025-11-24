@@ -49,7 +49,7 @@ def data_append(page, list_):
 
 
 
-def run_once(playwright: Playwright, question: str) -> None:
+def run_once(playwright: Playwright, question: str) -> dict:
     browser = playwright.chromium.launch(headless=False)
     # context = browser.new_context()
     context = browser.new_context(storage_state="cookies/doubao/doubao.json")
@@ -76,17 +76,23 @@ def run_once(playwright: Playwright, question: str) -> None:
 
     list_ = []
 
-    element = page.wait_for_selector(
-         '[data-testid="receive_message"] > div > div > div')
-    receive_message = element.wait_for_selector(' > [data-testid="message_text_content"].flow-markdown-body')
+    nodes = page.query_selector_all(
+        '[data-testid="receive_message"] [data-testid="message_content"] > div > [data-render-engine="node"]')
+    node_size = len(nodes)
+    receive_message = nodes[node_size - 2].wait_for_selector(' > [data-testid="message_text_content"].flow-markdown-body')
 
     # 获取文本内容（不包含 HTML 标签）
     article = receive_message.inner_text()
-    element = element.query_selector(' > div > [data-testid="search-reference-ui"]')
-    element.click()
-    # page.screenshot(path="full_page.png", full_page=True)
-    data_append(page,list_)
-    share_element.click()
+    reference_element = nodes[node_size - 1].query_selector('[data-testid="search-reference-ui"]')
+
+    try:
+        reference_element.click(timeout=1000)
+        data_append(page, list_)
+    except Exception as e:
+        print(e)
+
+    page.screenshot(path="full_page.png", full_page=True)
+    share_element.click(timeout=1000)
     page.wait_for_selector('[data-testid="thread_share_copy_btn"]')
     for e in page.query_selector_all('[data-testid="thread_share_copy_btn"]'):
         try:
@@ -128,6 +134,6 @@ def run_once(playwright: Playwright, question: str) -> None:
 if __name__ == '__main__':
 
     with sync_playwright() as playwright:
-        question = "给出2025年9月22号，食品安全相关的负面新闻有哪些，给出标题和链接。"
-        dict_final = run_once(playwright, question)
-        print(dict_final)
+        question = "新能源汽车渗透率如何突破50%瓶颈？"
+        rs = run_once(playwright, question)
+        print(rs)
