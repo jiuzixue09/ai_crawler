@@ -48,11 +48,11 @@ def data_append(page, list_):
         list_.append(dict_)
 
 
-
 def run_once(playwright: Playwright, question: str) -> dict:
-    browser = playwright.chromium.launch(headless=False)
+    browser = playwright.chromium.launch(headless=True)
     # context = browser.new_context()
-    context = browser.new_context(storage_state="cookies/doubao/doubao.json")
+    context = browser.new_context(storage_state="cookies/doubao/doubao.json",
+                                  user_agent=crawler_util.get_random_user_agent())
     page = context.new_page()
     page.goto("https://www.doubao.com/chat/")
     page.on("response", handle_response)  # Register the handler
@@ -67,10 +67,9 @@ def run_once(playwright: Playwright, question: str) -> dict:
     page.locator("#flow-end-msg-send").click()
 
     # 等待分享元素加载，设置超时时间为100秒(100000毫秒)
-    share_element = page.wait_for_selector(
+    page.wait_for_selector(
         'div.message-action-button-main [data-testid="message_action_share"]', # waiting til the share button available
-        timeout=100000,  # 100秒超时
-        state='visible'
+        timeout=100000  # 100秒超时
     )
     dict_final = {'status':0 , 'article':''}
 
@@ -92,7 +91,9 @@ def run_once(playwright: Playwright, question: str) -> dict:
         print(e)
 
     page.screenshot(path="full_page.png", full_page=True)
-    share_element.click(timeout=1000)
+    share_element = page.locator('div.message-action-button-main [data-testid="message_action_share"]')
+    share_element.click(timeout=5000)
+
     page.wait_for_selector('[data-testid="thread_share_copy_btn"]')
     for e in page.query_selector_all('[data-testid="thread_share_copy_btn"]'):
         try:
@@ -106,23 +107,6 @@ def run_once(playwright: Playwright, question: str) -> dict:
         else:
             time.sleep(i)
 
-    # page.wait_for_selector('.pointer-events-auto [data-testid="thread_share_copy_btn"]').click()
-
-    # # 展开深度思考结果
-    # page.wait_for_selector('[data-testid="collapse_button"]', timeout=10000).click()
-    # markdowns = page.wait_for_selector('//div[contains(@class,"think-block-container")]').query_selector_all(' > div')
-    # while markdowns:
-    #     markdown = markdowns.pop(0)
-    #     content = markdown.query_selector('[data-testid="message_text_content"]')
-    #     reference_ui =  markdown.query_selector('[data-testid="search-reference-ui"]')
-    #     if content:
-    #         if article:
-    #             article += '\n##################################\n'
-    #         article += content.inner_text()
-    #     if reference_ui:
-    #         reference_ui.click()
-    #         data_append(page, list_)
-
     if share_id:
         share_link = f'https://www.doubao.com/thread/{share_id}'
         dict_final['share_link'] = share_link
@@ -134,6 +118,6 @@ def run_once(playwright: Playwright, question: str) -> dict:
 if __name__ == '__main__':
 
     with sync_playwright() as playwright:
-        question = "新能源汽车渗透率如何突破50%瓶颈？"
+        question = "浙江省委书记一连用了6个最"
         rs = run_once(playwright, question)
         print(rs)

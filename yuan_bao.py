@@ -39,7 +39,8 @@ def run_once(playwright: Playwright, question: str) -> dict:
     global share_id
     browser = playwright.chromium.launch(headless=False)
     # context = browser.new_context()
-    context = browser.new_context(storage_state="cookies/yuanbao/yuanbao_1.json")
+    context = browser.new_context(storage_state="cookies/yuanbao/yuanbao_1.json",
+                                  user_agent=crawler_util.get_random_user_agent())
     page = context.new_page()
     page.goto("https://yuanbao.tencent.com/")
     page.on("response", handle_response)  # Register the handler

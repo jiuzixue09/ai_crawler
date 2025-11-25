@@ -70,7 +70,7 @@ def run_once(playwright: Playwright, question: str) -> dict:
     global share_link
 
     browser = playwright.chromium.launch(headless=False)
-    context = browser.new_context()
+    context = browser.new_context(user_agent=crawler_util.get_random_user_agent())
     # context = browser.new_context(storage_state="baidu.json")
     page = context.new_page()
     page.on("request", handle_request)  # Register the handler

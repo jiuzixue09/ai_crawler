@@ -2,6 +2,8 @@ import re
 from playwright.sync_api import Playwright, sync_playwright, expect
 import time
 
+import crawler_util
+
 
 def ini_button(page, name):
     button = page.get_by_role(
@@ -15,9 +17,10 @@ def ini_button(page, name):
         button.click()
 
 def run_once(playwright: Playwright, question: str) -> dict:
-    browser = playwright.chromium.launch(headless=False)
+    browser = playwright.chromium.launch(headless=False,)
     # context = browser.new_context()
-    context = browser.new_context(storage_state="cookies/deepseek/deepseek.json")
+    context = browser.new_context(storage_state="cookies/deepseek/deepseek.json",
+                                  user_agent=crawler_util.get_random_user_agent())
     page = context.new_page()
     page.goto("https://chat.deepseek.com/")
     # page.wait_for_timeout(2000)
@@ -93,7 +96,7 @@ def run_once(playwright: Playwright, question: str) -> dict:
 
 if __name__ == '__main__':
     with sync_playwright() as playwright:
-        question = "消费者对智能驾驶系统的信任度如何建立？"
-        # question = "消费者对新能源汽车的续航焦虑如何缓解？"
+        # question = " 汽车元宇宙概念的落地场景？"
+        question = "消费者对新能源汽车的续航焦虑如何缓解？"
         dict_final = run_once(playwright, question)
         print(dict_final)
