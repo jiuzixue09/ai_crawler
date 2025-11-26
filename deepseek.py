@@ -2,6 +2,8 @@ import re
 from playwright.sync_api import Playwright, sync_playwright, expect
 import time
 
+from playwright_stealth import stealth_sync
+
 import crawler_util
 
 
@@ -22,6 +24,7 @@ def run_once(playwright: Playwright, question: str) -> dict:
     context = browser.new_context(storage_state="cookies/deepseek/deepseek.json",
                                   user_agent=crawler_util.get_random_user_agent())
     page = context.new_page()
+    stealth_sync(page)
     page.goto("https://chat.deepseek.com/")
     # page.wait_for_timeout(2000)
     # ini_button(page, "深度思考")

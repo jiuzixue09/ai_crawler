@@ -2,6 +2,8 @@ import re
 import time
 
 from playwright.sync_api import Playwright, sync_playwright, expect
+from playwright_stealth import stealth_sync
+
 import crawler_util
 
 share_id = None
@@ -54,6 +56,7 @@ def run_once(playwright: Playwright, question: str) -> dict:
     context = browser.new_context(storage_state="cookies/doubao/doubao.json",
                                   user_agent=crawler_util.get_random_user_agent())
     page = context.new_page()
+    stealth_sync(page)
     page.goto("https://www.doubao.com/chat/")
     page.on("response", handle_response)  # Register the handler
     deep_thinking_button = page.wait_for_selector('[data-testid="use-deep-thinking-switch-btn"] > button',timeout=8000)
@@ -116,7 +119,7 @@ def run_once(playwright: Playwright, question: str) -> dict:
     return  dict_final
 
 if __name__ == '__main__':
-
+    crawler_util.headless = False
     with sync_playwright() as playwright:
         question = "浙江省委书记一连用了6个最"
         rs = run_once(playwright, question)

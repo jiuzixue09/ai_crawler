@@ -2,6 +2,8 @@ import re
 import time
 
 from playwright.sync_api import Playwright, sync_playwright, expect
+from playwright_stealth import stealth_sync
+
 import crawler_util
 
 share_id = None
@@ -42,7 +44,9 @@ def run_once(playwright: Playwright, question: str) -> dict:
     context = browser.new_context(storage_state="cookies/yuanbao/yuanbao_1.json",
                                   user_agent=crawler_util.get_random_user_agent())
     page = context.new_page()
+    stealth_sync(page)
     page.goto("https://yuanbao.tencent.com/")
+
     page.on("response", handle_response)  # Register the handler
     page.on("dialog", lambda dialog: dialog.accept())
 
@@ -143,6 +147,7 @@ def run_once(playwright: Playwright, question: str) -> dict:
 
 
 if __name__ == '__main__':
+    crawler_util.headless = False
     with sync_playwright() as playwright:
         question = "消费者对新能源汽车的续航焦虑如何缓解？"
         rs = run_once(playwright, question)
