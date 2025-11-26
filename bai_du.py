@@ -1,13 +1,10 @@
 import asyncio
 import json
-import queue
-import re
 import time
 
 import httpx
 import requests
-from requests_sse import EventSource
-from playwright.sync_api import Playwright, sync_playwright, expect
+from playwright.sync_api import Playwright, sync_playwright
 import crawler_util
 
 
@@ -69,7 +66,7 @@ def run_once(playwright: Playwright, question: str) -> dict:
     global history_data
     global share_link
 
-    browser = playwright.chromium.launch(headless=False)
+    browser = playwright.chromium.launch(headless=crawler_util.headless)
     context = browser.new_context(user_agent=crawler_util.get_random_user_agent())
     # context = browser.new_context(storage_state="baidu.json")
     page = context.new_page()

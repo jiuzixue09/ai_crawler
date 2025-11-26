@@ -37,7 +37,7 @@ def handle_response(response):
 
 def run_once(playwright: Playwright, question: str) -> dict:
     global share_id
-    browser = playwright.chromium.launch(headless=False)
+    browser = playwright.chromium.launch(headless=crawler_util.headless)
     # context = browser.new_context()
     context = browser.new_context(storage_state="cookies/yuanbao/yuanbao_1.json",
                                   user_agent=crawler_util.get_random_user_agent())

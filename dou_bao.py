@@ -49,7 +49,7 @@ def data_append(page, list_):
 
 
 def run_once(playwright: Playwright, question: str) -> dict:
-    browser = playwright.chromium.launch(headless=True)
+    browser = playwright.chromium.launch(headless=crawler_util.headless)
     # context = browser.new_context()
     context = browser.new_context(storage_state="cookies/doubao/doubao.json",
                                   user_agent=crawler_util.get_random_user_agent())

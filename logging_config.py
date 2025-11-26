@@ -2,7 +2,6 @@
 import logging
 from logging import Logger
 from logging.handlers import RotatingFileHandler
-import time
 import sys
 
 

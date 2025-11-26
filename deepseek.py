@@ -17,7 +17,7 @@ def ini_button(page, name):
         button.click()
 
 def run_once(playwright: Playwright, question: str) -> dict:
-    browser = playwright.chromium.launch(headless=False,)
+    browser = playwright.chromium.launch(headless=crawler_util.headless)
     # context = browser.new_context()
     context = browser.new_context(storage_state="cookies/deepseek/deepseek.json",
                                   user_agent=crawler_util.get_random_user_agent())
