@@ -10,16 +10,11 @@ import chart_gpt
 import deepseek
 import dou_bao
 import excel_util
+import logging_config
 import yuan_bao
-import logging
-
-# Configure logging
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s', handlers=[
-    logging.FileHandler("crawler.log"),
-    logging.StreamHandler()
-])
 
 
+logging = logging_config.setup_logger('crawler.log','geomonitor')
 
 def select_item_from_console(items):
     """Display items and let user select by index."""
@@ -55,7 +50,7 @@ def input_and_out_handle():
     output_name = input("Enter the output Excel filename (without extension): ").strip()
     output_path = os.path.join(output_dir, f"{output_name}.xlsx")
 
-    items = ['baidu', 'deepseek', 'doubao', 'yuanbao', 'chartgpt']
+    items = ['baidu', 'deepseek', 'doubao', 'yuanbao', 'chartgpt', 'all']
 
     selected = select_item_from_console(items)
 
@@ -68,7 +63,10 @@ def handle():
 
     file_path, output_path, selected = input_and_out_handle()
 
-    site_crawler = site_map.get(selected)
+    if selected == 'all':
+        site_crawlers = [bai_du, deepseek, dou_bao, yuan_bao]
+    else:
+        site_crawlers = [site_map.get(selected)]
 
     eu = excel_util.ExcelUtil()
     # eu = excel_util.ExcelUtil('rs.xlsx')
@@ -79,17 +77,18 @@ def handle():
         for l in file:
             question = l.strip()
             logging.info(question)
-            data = search(question, site_crawler)
 
-            try:
-                eu.append_excel(data)
-                eu.save_excel(output_path)
-            except Exception as e:
-                logging.error(e)
+            for site_crawler in site_crawlers:
+                data = search(question, site_crawler)
+
+                try:
+                    eu.append_excel(data)
+                    eu.save_excel(output_path)
+                except Exception as e:
+                    logging.error(e)
 
 
 def search(question, site_crawler):
-    time.sleep(random.randrange(20, 50))
     with sync_playwright() as playwright:
         try:
 

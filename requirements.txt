@@ -3,3 +3,4 @@ playwright
 openpyxl
 httpx
 requests
+openpyxl
