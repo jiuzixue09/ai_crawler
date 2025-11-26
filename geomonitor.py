@@ -34,6 +34,8 @@ def select_item_from_console(items):
 def input_and_out_handle():
     # Get file path from user
     file_path = input("Enter the file path to read: ").strip()
+    if '/' not in file_path:
+        file_path = os.path.join(os.getcwd(), file_path)
 
     # Check if file exists
     if not os.path.exists(file_path):
@@ -42,6 +44,8 @@ def input_and_out_handle():
 
     # Get output directory
     output_dir = input("Enter the output directory: ").strip()
+    if '/' not in output_dir:
+        output_dir = os.path.join(os.getcwd(), output_dir)
 
     # Create directory if it doesn't exist
     os.makedirs(output_dir, exist_ok=True)
