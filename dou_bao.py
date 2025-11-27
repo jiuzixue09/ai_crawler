@@ -1,8 +1,9 @@
 import time
 
 from playwright.sync_api import sync_playwright
-from playwright_stealth import stealth_sync
 import atexit
+
+from playwright_stealth import Stealth
 
 import crawler_util
 
@@ -24,11 +25,11 @@ class DouBao:
         browser = playwright.chromium.launch(headless=crawler_util.headless)
         context = browser.new_context(storage_state=self.storage_state,
                                        user_agent=crawler_util.get_random_user_agent())
+        Stealth().apply_stealth_sync(context)
 
         self.context = context
         self.playwright = playwright
         self.share_id = None
-        self.page = None
 
         atexit.register(self.cleanup_function)
 
@@ -144,20 +145,16 @@ class DouBao:
         dict_final['list'] = list_
         return dict_final
 
-    def close_page(self):
-        if self.page:
-            self.page.close()
-            self.page = None
 
     def run_once(self, question: str) -> dict:
-        if self.page is None:
-            page = self.context.new_page()
-            stealth_sync(page)
-            self.page = page
+        page = self.context.new_page()
+        try:
+            page.goto("https://www.doubao.com/chat/")
+            page.on("response", self.handle_response)  # Register the handler
+            return self.handle_data(page, question)
+        finally:
+            page.close()
 
-        self.page.goto("https://www.doubao.com/chat/")
-        self.page.on("response", self.handle_response)  # Register the handler
-        return self.handle_data(self.page, question)
 
 if __name__ == '__main__':
     crawler_util.headless = False

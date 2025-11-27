@@ -2,7 +2,7 @@ import atexit
 import time
 
 from playwright.sync_api import sync_playwright
-from playwright_stealth import stealth_sync
+from playwright_stealth import Stealth
 
 import crawler_util
 
@@ -18,6 +18,8 @@ class YuanBao:
         browser = playwright.chromium.launch(headless=crawler_util.headless)
         context = browser.new_context(storage_state=storage_state,
                                       user_agent=crawler_util.get_random_user_agent())
+
+        Stealth().apply_stealth_sync(context)
 
         self.context = context
         self.playwright = playwright

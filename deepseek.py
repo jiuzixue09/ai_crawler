@@ -2,7 +2,7 @@ import atexit
 from playwright.sync_api import sync_playwright
 import time
 
-from playwright_stealth import stealth_sync
+from playwright_stealth import Stealth
 
 import crawler_util
 
@@ -18,6 +18,7 @@ class DeepSeek:
         browser = playwright.chromium.launch(headless=crawler_util.headless)
         context = browser.new_context(storage_state=storage_state,
                                       user_agent=crawler_util.get_random_user_agent())
+        Stealth().apply_stealth_sync(context)
 
         self.context = context
         self.playwright = playwright
@@ -26,7 +27,6 @@ class DeepSeek:
 
     def run_once(self, question: str) -> dict:
         page = self.context.new_page()
-        stealth_sync(page)
         try:
             page.goto("https://chat.deepseek.com/")
             return self.handle_data(page, question)

@@ -6,7 +6,7 @@ import time
 import httpx
 import requests
 from playwright.sync_api import sync_playwright
-from playwright_stealth import stealth_sync
+from playwright_stealth.stealth import Stealth
 
 import crawler_util
 
@@ -20,6 +20,8 @@ class BaiDu:
         playwright = sync_playwright().start()
         browser = playwright.chromium.launch(headless=crawler_util.headless)
         context = browser.new_context(user_agent=crawler_util.get_random_user_agent())
+
+        Stealth().apply_stealth_sync(context)
 
         self.context = context
         self.playwright = playwright
@@ -66,7 +68,6 @@ class BaiDu:
 
     def run_once(self, question: str) -> dict:
         page = self.context.new_page()
-        stealth_sync(page)
         try:
 
             page.goto("https://chat.baidu.com/search")
