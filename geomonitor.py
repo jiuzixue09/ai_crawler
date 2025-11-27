@@ -1,7 +1,6 @@
 import json
 import os
-
-
+import sys
 
 import bai_du
 import chat_gpt
@@ -62,7 +61,7 @@ def search(questions, output_path, site_crawler):
 
 
 if __name__ == '__main__':
-    # args = sys.argv
+    args = sys.argv
     # crawler_util.headless = False
     # args = ['','questions.txt',os.getcwd(),'deepseek']
 
