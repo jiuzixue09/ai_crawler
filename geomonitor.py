@@ -1,8 +1,7 @@
 import json
 import os
-import sys
 
-from playwright.sync_api import sync_playwright
+
 
 import bai_du
 import chat_gpt
@@ -12,10 +11,7 @@ import dou_bao
 import excel_util
 import logging_config
 import yuan_bao
-from threading import Thread
 
-
-logging = logging_config.setup_logger('crawler.log','geomonitor')
 
 
 def handle(file_path, output_path, selected):
@@ -67,6 +63,11 @@ def search(questions, output_path, site_crawler):
 
 if __name__ == '__main__':
     # args = sys.argv
-    crawler_util.headless = False
-    args = ['','questions.txt',os.getcwd(),'deepseek']
+    # crawler_util.headless = False
+    # args = ['','questions.txt',os.getcwd(),'deepseek']
+
+    log_dir = os.path.join(os.getcwd(), 'log')
+    os.makedirs(log_dir, exist_ok=True)
+    log_file = os.path.join(log_dir, args[3] + '.log')
+    logging = logging_config.setup_logger(log_file, 'geomonitor')
     handle(args[1], args[2], args[3])
