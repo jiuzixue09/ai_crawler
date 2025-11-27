@@ -1,126 +1,169 @@
-import re
 import time
 
-from playwright.sync_api import Playwright, sync_playwright, expect
+from playwright.sync_api import sync_playwright
 from playwright_stealth import stealth_sync
+import atexit
 
 import crawler_util
 
-share_id = None
 
-def handle_response(response):
-    global share_id
-    # https://www.doubao.com/samantha/thread/share/
-    if "samantha/thread/share/" in response.url and response.status == 200 :
-        print(f"Intercepted API response: {response.url}")
-        try:
-            res = response.json()
-            if res:
-                data = res['data']
-                if data and 'pre_share_id' in data:
-                    share_id = data['pre_share_id']
-                elif data and 'share_id' in data:
-                    share_id = data['share_id']
-        except Exception as e:
-            print(e)
+class DouBao:
+
+    def save_cookies(self):
+        crawler_util.save_cookies(self.context, self.storage_state)
+
+    def cleanup_function(self):
+        crawler_util.save_cookies(self.context, self.storage_state)
+        self.context.close()
+        self.playwright.stop()
 
 
-def data_append(page, list_):
+    def __init__(self):
+        self.storage_state = "cookies/doubao/doubao.json"
+        playwright = sync_playwright().start()
+        browser = playwright.chromium.launch(headless=crawler_util.headless)
+        context = browser.new_context(storage_state=self.storage_state,
+                                       user_agent=crawler_util.get_random_user_agent())
 
-    # 3. 5秒内等待 div.dc433409 加载，超时则抛TimeoutError
-    target_div = page.wait_for_selector(
-        selector='[data-testid="canvas_panel_container"] [data-testid="search-text-item"]',  # 目标元素选择器
-        timeout=5000  # 超时时间：5000毫秒（5秒）
-    )
+        self.context = context
+        self.playwright = playwright
+        self.share_id = None
+        self.page = None
 
-    page.screenshot(path="full_page.png", full_page=True)
-
-    # 定位目标div下所有 <a> 标签（即包含链接和标题的标签）
-    a_tags = target_div.query_selector('../ ..').query_selector_all('[data-testid="search-text-item"] a ')
-    # think-block-container
-
-    # 遍历a标签，提取链接和标题
-    for a_tag in a_tags:
-        # 提取链接：a标签的href属性
-        url = a_tag.get_attribute("href")
-        # 提取标题：a标签内 class="search-view-card__title" 的div文本（标题容器）
-        title_elem = a_tag.query_selector('//div[contains(@class,"search-item-title")]')  # 定位标题元素
-        title = title_elem.text_content().strip() if title_elem else "无标题"  # 处理标题为空的情况
-        dict_ = {'title': title, 'url': url}
-        list_.append(dict_)
+        atexit.register(self.cleanup_function)
 
 
-def run_once(playwright: Playwright, question: str) -> dict:
-    browser = playwright.chromium.launch(headless=crawler_util.headless)
-    # context = browser.new_context()
-    context = browser.new_context(storage_state="cookies/doubao/doubao.json",
-                                  user_agent=crawler_util.get_random_user_agent())
-    page = context.new_page()
-    stealth_sync(page)
-    page.goto("https://www.doubao.com/chat/")
-    page.on("response", handle_response)  # Register the handler
-    deep_thinking_button = page.wait_for_selector('[data-testid="use-deep-thinking-switch-btn"] > button',timeout=8000)
+    def handle_response(self,response):
+        # https://www.doubao.com/samantha/thread/share/
+        if "samantha/thread/share/" in response.url and response.status == 200 :
+            print(f"Intercepted API response: {response.url}")
+            try:
+                res = response.json()
+                if res:
+                    data = res['data']
+                    if data and 'pre_share_id' in data:
+                        self.share_id = data['pre_share_id']
+                    elif data and 'share_id' in data:
+                        self.share_id = data['share_id']
+            except Exception as e:
+                print(e)
 
-    deep_thinking_button.click()
 
-    textarea = page.locator('textarea.semi-input-textarea')
-    textarea.fill(question)
+    def data_append(self,page, list_):
+        # 3. 5秒内等待 div.dc433409 加载，超时则抛TimeoutError
+        target_div = page.wait_for_selector(
+            selector='[data-testid="canvas_panel_container"] [data-testid="search-text-item"]',  # 目标元素选择器
+            timeout=5000  # 超时时间：5000毫秒（5秒）
+        )
 
-    page.wait_for_timeout(100)
-    page.locator("#flow-end-msg-send").click()
+        page.screenshot(path="full_page.png", full_page=True)
 
-    # 等待分享元素加载，设置超时时间为100秒(100000毫秒)
-    page.wait_for_selector(
-        'div.message-action-button-main [data-testid="message_action_share"]', # waiting til the share button available
-        timeout=100000  # 100秒超时
-    )
-    dict_final = {'status':0 , 'article':''}
+        # 定位目标div下所有 <a> 标签（即包含链接和标题的标签）
+        a_tags = target_div.query_selector('../ ..').query_selector_all('[data-testid="search-text-item"] a ')
+        # think-block-container
 
-    list_ = []
+        # 遍历a标签，提取链接和标题
+        for a_tag in a_tags:
+            # 提取链接：a标签的href属性
+            url = a_tag.get_attribute("href")
+            # 提取标题：a标签内 class="search-view-card__title" 的div文本（标题容器）
+            title_elem = a_tag.query_selector('//div[contains(@class,"search-item-title")]')  # 定位标题元素
+            title = title_elem.text_content().strip() if title_elem else "无标题"  # 处理标题为空的情况
+            dict_ = {'title': title, 'url': url}
+            list_.append(dict_)
 
-    nodes = page.query_selector_all(
-        '[data-testid="receive_message"] [data-testid="message_content"] > div > [data-render-engine="node"]')
-    node_size = len(nodes)
-    receive_message = nodes[node_size - 2].wait_for_selector(' > [data-testid="message_text_content"].flow-markdown-body')
+    def handle_data(self, page, question):
+        deep_thinking_button = page.wait_for_selector('[data-testid="use-deep-thinking-switch-btn"] > button',
+                                                      timeout=8000)
 
-    # 获取文本内容（不包含 HTML 标签）
-    article = receive_message.inner_text()
-    reference_element = nodes[node_size - 1].query_selector('[data-testid="search-reference-ui"]')
+        deep_thinking_button.click()
 
-    try:
-        reference_element.click(timeout=1000)
-        data_append(page, list_)
-    except Exception as e:
-        print(e)
+        textarea = page.locator('textarea.semi-input-textarea')
+        textarea.fill(question)
 
-    page.screenshot(path="full_page.png", full_page=True)
-    share_element = page.locator('div.message-action-button-main [data-testid="message_action_share"]')
-    share_element.click(timeout=5000)
+        page.wait_for_timeout(100)
+        page.locator("#flow-end-msg-send").click()
 
-    page.wait_for_selector('[data-testid="thread_share_copy_btn"]')
-    for e in page.query_selector_all('[data-testid="thread_share_copy_btn"]'):
-        try:
-            e.click(timeout=1000)
-        except Exception as e:
-            print(e)
+        # 等待分享元素加载，设置超时时间为100秒(100000毫秒)
+        page.wait_for_selector(
+            'div.message-action-button-main [data-testid="message_action_share"]',
+            # waiting til the share button available
+            timeout=100000  # 100秒超时
+        )
+        dict_final = {'status': 0, 'article': ''}
 
-    for i in range(1, 5):
-        if share_id:
-            break
+        list_ = []
+
+        nodes = page.query_selector_all(
+            '[data-testid="receive_message"] [data-testid="message_content"] > div > [data-render-engine="node"]')
+        node_size = len(nodes)
+
+        if node_size == 0:
+            nodes = page.query_selector_all(
+                '[data-testid="receive_message"] [data-testid="message_content"] > div > div')
+            node_size = len(nodes)
+            receive_message = nodes[node_size - 2]
         else:
-            time.sleep(i)
+            receive_message = nodes[node_size - 2].wait_for_selector(
+                ' > [data-testid="message_text_content"].flow-markdown-body')
 
-    if share_id:
-        share_link = f'https://www.doubao.com/thread/{share_id}'
-        dict_final['share_link'] = share_link
+        reference_element = nodes[node_size - 1].query_selector('[data-testid="search-reference-ui"]')
 
-    dict_final['article'] = article
-    dict_final['list'] = list_
-    return  dict_final
+        # 获取文本内容（不包含 HTML 标签）
+        article = receive_message.inner_text()
+
+
+        try:
+            reference_element.click(timeout=1000)
+            self.data_append(page, list_)
+        except Exception as e:
+            print(e)
+
+        page.screenshot(path="full_page.png", full_page=True)
+        share_element = page.locator('div.message-action-button-main [data-testid="message_action_share"]')
+        share_element.click(timeout=5000)
+
+        page.wait_for_selector('[data-testid="thread_share_copy_btn"]')
+        for e in page.query_selector_all('[data-testid="thread_share_copy_btn"]'):
+            try:
+                e.click(timeout=1000)
+            except Exception as e:
+                print(e)
+
+        for i in range(1, 5):
+            if self.share_id:
+                break
+            else:
+                time.sleep(i)
+
+        if self.share_id:
+            share_link = f'https://www.doubao.com/thread/{self.share_id}'
+            dict_final['share_link'] = share_link
+
+        dict_final['article'] = article
+        dict_final['list'] = list_
+        return dict_final
+
+    def close_page(self):
+        if self.page:
+            self.page.close()
+            self.page = None
+
+    def run_once(self, question: str) -> dict:
+        if self.page is None:
+            page = self.context.new_page()
+            stealth_sync(page)
+            self.page = page
+
+        self.page.goto("https://www.doubao.com/chat/")
+        self.page.on("response", self.handle_response)  # Register the handler
+        return self.handle_data(self.page, question)
 
 if __name__ == '__main__':
     crawler_util.headless = False
-    with sync_playwright() as playwright:
-        question = "浙江省委书记一连用了6个最"
-        rs = run_once(playwright, question)
-        print(rs)
+    db =  DouBao()
+
+    q = "上海现在换电车还有什么官方补贴？"
+    rs = db.run_once(q)
+    db.save_cookies()
+    print(rs)

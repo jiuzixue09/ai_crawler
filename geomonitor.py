@@ -1,62 +1,72 @@
 import json
+import os
 import sys
 
 from playwright.sync_api import sync_playwright
 
 import bai_du
-import chart_gpt
+import chat_gpt
+import crawler_util
 import deepseek
 import dou_bao
 import excel_util
 import logging_config
 import yuan_bao
+from threading import Thread
 
 
 logging = logging_config.setup_logger('crawler.log','geomonitor')
 
 
 def handle(file_path, output_path, selected):
-    site_map = {'baidu': bai_du, 'deepseek': deepseek, 'doubao': dou_bao, 'yuanbao': yuan_bao,
-                'chartgpt': chart_gpt}
+    site_map = {'baidu': bai_du.BaiDu, 'deepseek': deepseek.DeepSeek, 'doubao': dou_bao.DouBao, 'yuanbao': yuan_bao.YuanBao,
+                'chartgpt': chat_gpt.ChatGpt}
 
 
     if selected == 'all':
-        site_crawlers = [bai_du, deepseek, dou_bao, yuan_bao]
+        site_crawlers = [bai_du.BaiDu, deepseek.DeepSeek, dou_bao.DouBao, chat_gpt.ChatGpt, yuan_bao.YuanBao]
     else:
         site_crawlers = [site_map.get(selected)]
 
-    eu = excel_util.ExcelUtil()
-    # eu = excel_util.ExcelUtil('rs.xlsx')
-    # data = ['问题', '回答', '分享链接', '来源信息']
-    # eu.append_excel(data)
-
+    questions = []
     with open(file_path, 'r') as file:
         for l in file:
-            question = l.strip()
-            logging.info(question)
+            questions.append(l)
 
-            for site_crawler in site_crawlers:
-                data = search(question, site_crawler)
+    threads = []
+    for site_crawler in site_crawlers:
+        op = os.path.join(output_path,site_crawler.__name__ + '.xlsx')
+        search(questions, op, site_crawler())
+        # t = Thread(target= search, args=(questions, op, site_crawler()))
+        # t.start()
+        # threads.append(t)
 
-                try:
-                    eu.append_excel(data)
-                    eu.save_excel(output_path)
-                except Exception as e:
-                    logging.error(e)
+    # wait_for_threads(threads)
 
 
-def search(question, site_crawler):
-    with sync_playwright() as playwright:
+def wait_for_threads(threads):
+    for t in threads:
+        t.join()
+
+
+def search(questions, output_path, site_crawler):
+    eu = excel_util.ExcelUtil()
+    for question in questions:
         try:
-
-            data_json = site_crawler.run_once(playwright, question)
+            data_json = site_crawler.run_once(question)
             data = [question, data_json['article'], data_json['share_link'], str(data_json.get('list', ''))]
             logging.info(json.dumps(data))
-            return data
+
+            eu.append_excel(data)
+            eu.save_excel(output_path)
+
         except Exception as e:
             logging.error(e)
-            return None
+
+
 
 if __name__ == '__main__':
-    args = sys.argv
+    # args = sys.argv
+    crawler_util.headless = False
+    args = ['','questions.txt',os.getcwd(),'deepseek']
     handle(args[1], args[2], args[3])
