@@ -48,7 +48,6 @@ class YuanBao:
 
     def run_once(self, question: str) -> dict:
         page = self.context.new_page()
-        stealth_sync(page)
         try:
 
             page.goto("https://yuanbao.tencent.com/")

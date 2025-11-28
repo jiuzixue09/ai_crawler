@@ -1,6 +1,8 @@
 import json
 import os
+import random
 import sys
+import time
 
 import bai_du
 import chat_gpt
@@ -54,6 +56,10 @@ def search(questions, output_path, site_crawler):
 
             eu.append_excel(data)
             eu.save_excel(output_path)
+            if site_crawler.__class__ == yuan_bao.YuanBao:
+                time.sleep(random.randint(30, 60))
+            elif site_crawler.__class__ in [deepseek.DeepSeek, dou_bao.DouBao]:
+                time.sleep(random.randint(5, 10))
 
         except Exception as e:
             logging.error(e)
@@ -61,9 +67,9 @@ def search(questions, output_path, site_crawler):
 
 
 if __name__ == '__main__':
-    args = sys.argv
-    # crawler_util.headless = False
-    # args = ['','questions.txt',os.getcwd(),'deepseek']
+    # args = sys.argv
+    crawler_util.headless = False
+    args = ['','questions.txt',os.getcwd(),'yuanbao']
 
     log_dir = os.path.join(os.getcwd(), 'log')
     os.makedirs(log_dir, exist_ok=True)
