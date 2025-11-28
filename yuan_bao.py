@@ -79,10 +79,11 @@ class YuanBao:
         if internet_search and 'checked' not in online_search_button.get_attribute("class").strip():
             online_search_button.click()
 
-        crawler_util.select_drop_down_item(page,
-                                           'div.yb-switch-internet-search-btn__right',
-                                           'div.drop-down-item__name',
-                                           internet_search_name)
+        if page.locator('div.yb-switch-internet-search-btn__right').is_visible():
+            crawler_util.select_drop_down_item(page,
+                                               'div.yb-switch-internet-search-btn__right',
+                                               'div.drop-down-item__name',
+                                               internet_search_name)
 
         textarea = page.locator('div.ql-editor')
         textarea.fill(question)
