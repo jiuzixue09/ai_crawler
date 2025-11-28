@@ -129,7 +129,7 @@ class DouBao:
             try:
                 e.click(timeout=1000)
             except Exception as e:
-                print(e)
+                pass
 
         for i in range(1, 5):
             if self.share_id:
