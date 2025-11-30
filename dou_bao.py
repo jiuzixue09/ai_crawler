@@ -1,6 +1,7 @@
 import time
 
-from playwright.sync_api import sync_playwright
+from playwright._impl._api_structures import ProxySettings
+from playwright.sync_api import sync_playwright, ViewportSize
 import atexit
 
 from playwright_stealth import Stealth
@@ -10,28 +11,38 @@ import crawler_util
 
 class DouBao:
 
-    def save_cookies(self):
-        crawler_util.save_cookies(self.context, self.storage_state)
-
-    def cleanup_function(self):
-        crawler_util.save_cookies(self.context, self.storage_state)
-        self.context.close()
-        self.playwright.stop()
+    # def save_cookies(self):
+    #     crawler_util.save_cookies(self.context, self.storage_state)
+    #
+    # def cleanup_function(self):
+    #     crawler_util.save_cookies(self.context, self.storage_state)
+    #     self.context.close()
+    #     self.playwright.stop()
 
 
     def __init__(self):
-        self.storage_state = "cookies/doubao/doubao.json"
-        playwright = sync_playwright().start()
-        browser = playwright.chromium.launch(headless=crawler_util.headless)
-        context = browser.new_context(storage_state=self.storage_state,
-                                       user_agent=crawler_util.get_random_user_agent())
-        Stealth().apply_stealth_sync(context)
 
-        self.context = context
-        self.playwright = playwright
         self.share_id = None
-
-        atexit.register(self.cleanup_function)
+    #     self.storage_state = "cookies/doubao/doubao.json"
+    #     playwright = sync_playwright().start()
+    #     # proxy = ProxySettings(server=crawler_util.proxies['http'])
+    #     # proxy = ProxySettings(server='http://f679.kdltps.com:15818/',
+    #     #                       username='t12187413243075',password='yr4fjfks',
+    #     #                       bypass="localhost,google-analytics.com")
+    #     # proxy = ProxySettings(server='http://122.97.101.194:34642')
+    #
+    #     browser = playwright.chromium.launch(headless=crawler_util.headless)
+    #     context = browser.new_context(
+    #         # storage_state=self.storage_state,
+    #
+    #         user_agent=crawler_util.get_random_user_agent()
+    #     )
+    #     Stealth().apply_stealth_sync(context)
+    #
+    #     self.context = context
+    #     self.playwright = playwright
+    #
+    #     atexit.register(self.cleanup_function)
 
 
     def handle_response(self,response):
@@ -75,7 +86,7 @@ class DouBao:
 
     def handle_data(self, page, question):
         deep_thinking_button = page.wait_for_selector('[data-testid="use-deep-thinking-switch-btn"] > button',
-                                                      timeout=8000)
+                                                      timeout=30000)
 
         deep_thinking_button.click()
 
@@ -86,8 +97,14 @@ class DouBao:
         page.locator("#flow-end-msg-send").click()
 
         # 等待分享元素加载，设置超时时间为100秒(100000毫秒)
+        # page.wait_for_selector(
+        #     'div.message-action-button-main [data-testid="message_action_share"]',
+        #     # waiting til the share button available
+        #     timeout=100000  # 100秒超时
+        # )
+        # 等待分享元素加载，设置超时时间为100秒(100000毫秒)
         page.wait_for_selector(
-            'div.message-action-button-main [data-testid="message_action_share"]',
+            '[data-testid="suggest_message_list"]',
             # waiting til the share button available
             timeout=100000  # 100秒超时
         )
@@ -121,25 +138,27 @@ class DouBao:
             print(e)
 
         page.screenshot(path="full_page.png", full_page=True)
-        share_element = page.locator('div.message-action-button-main [data-testid="message_action_share"]')
-        share_element.click(timeout=5000)
+        # share_element = page.locator('div.message-action-button-main [data-testid="message_action_share"]')
+        # share_element.click(timeout=5000)
 
-        page.wait_for_selector('[data-testid="thread_share_copy_btn"]')
-        for e in page.query_selector_all('[data-testid="thread_share_copy_btn"]'):
-            try:
-                e.click(timeout=1000)
-            except Exception as e:
-                pass
+        # page.wait_for_selector('[data-testid="thread_share_copy_btn"]')
+        # for e in page.query_selector_all('[data-testid="thread_share_copy_btn"]'):
+        #     try:
+        #         e.click(timeout=1000)
+        #     except Exception as e:
+        #         pass
 
-        for i in range(1, 5):
-            if self.share_id:
-                break
-            else:
-                time.sleep(i)
+        # for i in range(1, 5):
+        #     if self.share_id:
+        #         break
+        #     else:
+        #         time.sleep(i)
 
         if self.share_id:
             share_link = f'https://www.doubao.com/thread/{self.share_id}'
             dict_final['share_link'] = share_link
+        else:
+            dict_final['share_link'] = '无分享链接'
 
         dict_final['article'] = article
         dict_final['list'] = list_
@@ -147,13 +166,25 @@ class DouBao:
 
 
     def run_once(self, question: str) -> dict:
-        page = self.context.new_page()
-        try:
-            page.goto("https://www.doubao.com/chat/")
-            page.on("response", self.handle_response)  # Register the handler
-            return self.handle_data(page, question)
-        finally:
-            page.close()
+
+        with sync_playwright() as playwright:
+
+            browser = playwright.chromium.launch(headless=crawler_util.headless)
+            context = browser.new_context(
+                # storage_state=self.storage_state,
+                user_agent=crawler_util.get_random_user_agent()
+            )
+
+
+            Stealth().apply_stealth_sync(context)
+            page = context.new_page()
+            try:
+                # page.set_viewport_size({"width": 1920, "height": 1080})
+                page.goto("https://www.doubao.com/chat/")
+                page.on("response", self.handle_response)  # Register the handler
+                return self.handle_data(page, question)
+            finally:
+                page.close()
 
 
 if __name__ == '__main__':
@@ -162,5 +193,4 @@ if __name__ == '__main__':
 
     q = "上海现在换电车还有什么官方补贴？"
     rs = db.run_once(q)
-    db.save_cookies()
     print(rs)
