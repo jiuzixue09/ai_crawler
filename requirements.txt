@@ -5,3 +5,5 @@ openpyxl
 httpx
 requests
 openpyxl
+cos-python-sdk-v5
+Pillow

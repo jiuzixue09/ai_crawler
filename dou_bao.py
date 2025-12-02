@@ -11,38 +11,26 @@ import crawler_util
 
 class DouBao:
 
-    # def save_cookies(self):
-    #     crawler_util.save_cookies(self.context, self.storage_state)
-    #
-    # def cleanup_function(self):
-    #     crawler_util.save_cookies(self.context, self.storage_state)
-    #     self.context.close()
-    #     self.playwright.stop()
+    def cleanup_function(self):
+        self.playwright.stop()
 
 
     def __init__(self):
 
         self.share_id = None
-    #     self.storage_state = "cookies/doubao/doubao.json"
-    #     playwright = sync_playwright().start()
-    #     # proxy = ProxySettings(server=crawler_util.proxies['http'])
-    #     # proxy = ProxySettings(server='http://f679.kdltps.com:15818/',
-    #     #                       username='t12187413243075',password='yr4fjfks',
-    #     #                       bypass="localhost,google-analytics.com")
-    #     # proxy = ProxySettings(server='http://122.97.101.194:34642')
-    #
-    #     browser = playwright.chromium.launch(headless=crawler_util.headless)
-    #     context = browser.new_context(
-    #         # storage_state=self.storage_state,
-    #
-    #         user_agent=crawler_util.get_random_user_agent()
-    #     )
-    #     Stealth().apply_stealth_sync(context)
-    #
-    #     self.context = context
-    #     self.playwright = playwright
-    #
-    #     atexit.register(self.cleanup_function)
+        # self.storage_state = "cookies/doubao/doubao.json"
+        playwright = sync_playwright().start()
+        # proxy = ProxySettings(server=crawler_util.proxies['http'])
+        # proxy = ProxySettings(server='http://f679.kdltps.com:15818/',
+        #                       username='t12187413243075',password='yr4fjfks',
+        #                       bypass="localhost,google-analytics.com")
+        # proxy = ProxySettings(server='http://122.97.101.194:34642')
+
+        browser = playwright.chromium.launch(headless=crawler_util.headless)
+        self.browser = browser
+        self.playwright = playwright
+
+        atexit.register(self.cleanup_function)
 
 
     def handle_response(self,response):
@@ -166,25 +154,22 @@ class DouBao:
 
 
     def run_once(self, question: str) -> dict:
-
-        with sync_playwright() as playwright:
-
-            browser = playwright.chromium.launch(headless=crawler_util.headless)
-            context = browser.new_context(
-                # storage_state=self.storage_state,
-                user_agent=crawler_util.get_random_user_agent()
-            )
+        # browser = playwright.chromium.launch(headless=crawler_util.headless)
+        context = self.browser.new_context(
+            # storage_state=self.storage_state,
+            user_agent=crawler_util.get_random_user_agent()
+        )
 
 
-            Stealth().apply_stealth_sync(context)
-            page = context.new_page()
-            try:
-                # page.set_viewport_size({"width": 1920, "height": 1080})
-                page.goto("https://www.doubao.com/chat/")
-                page.on("response", self.handle_response)  # Register the handler
-                return self.handle_data(page, question)
-            finally:
-                page.close()
+        Stealth().apply_stealth_sync(context)
+        page = context.new_page()
+        try:
+            # page.set_viewport_size({"width": 1920, "height": 1080})
+            page.goto("https://www.doubao.com/chat/")
+            page.on("response", self.handle_response)  # Register the handler
+            return self.handle_data(page, question)
+        finally:
+            page.close()
 
 
 if __name__ == '__main__':

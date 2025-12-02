@@ -167,4 +167,4 @@ if __name__ == '__main__':
 
     q = "浙江省委书记一连用了6个最"
     rs = bd.run_once(q)
-    print(rs)
+    print(json.dumps(rs))

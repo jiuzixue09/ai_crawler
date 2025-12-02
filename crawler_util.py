@@ -1,7 +1,21 @@
 import json
 import random
+import re
 
+import requests
 from playwright.sync_api import Page
+
+# 隧道域名:端口号
+tunnel = "f679.kdltps.com:15818"
+
+# 用户名密码方式
+username = "t12187413243075"
+password = "yr4fjfks"
+
+proxies = {
+    "http": "http://%(user)s:%(pwd)s@%(proxy)s/" % {"user": username, "pwd": password, "proxy": tunnel},
+    "https": "http://%(user)s:%(pwd)s@%(proxy)s/" % {"user": username, "pwd": password, "proxy": tunnel}
+}
 
 user_agent = [
         'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36 Edg/114.0.0.0',
@@ -20,11 +34,22 @@ def get_random_user_agent():
     return user_agent[random.randrange(len(user_agent))]
 
 
-def zoom_in(page, times=1):
-    for _ in range(times):
-        page.keyboard.down("Control")
-        page.keyboard.press("-")
-        page.keyboard.up("Control")
+def local_ip():
+    import socket
+    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    s.connect(('8.8.8.8', 1))  # connect() for UDP doesn't send packets
+    local_ip_address = s.getsockname()[0]
+    return local_ip_address
+
+
+def public_ip():
+    try:
+        resp = requests.get('https://ipinfo.io/ip', timeout=5)
+        ip = resp.content.decode('utf-8')
+    except:
+        resp = requests.get('http://myip.ipip.net', timeout=5)
+        ip = str.join('', re.findall('[0-9.]{4}', resp.content.decode('utf-8')))
+    return ip
 
 
 def save_cookies(context,path_name):
