@@ -1,7 +1,6 @@
 import time
 
-from playwright._impl._api_structures import ProxySettings
-from playwright.sync_api import sync_playwright, ViewportSize
+from playwright.sync_api import sync_playwright
 import atexit
 
 from playwright_stealth import Stealth
@@ -157,21 +156,19 @@ class DouBao:
 
     def run_once(self, question: str) -> dict:
         # browser = playwright.chromium.launch(headless=crawler_util.headless)
-        context = self.browser.new_context(
-            # storage_state=self.storage_state,
-            user_agent=crawler_util.get_random_user_agent()
-        )
+        with self.browser.new_context(
+                # storage_state=self.storage_state,
+                user_agent=crawler_util.get_random_user_agent()) as context:
 
-
-        Stealth().apply_stealth_sync(context)
-        page = context.new_page()
-        try:
-            # page.set_viewport_size({"width": 1920, "height": 1080})
-            page.goto("https://www.doubao.com/chat/")
-            page.on("response", self.handle_response)  # Register the handler
-            return self.handle_data(page, question)
-        finally:
-            page.close()
+            Stealth().apply_stealth_sync(context)
+            page = context.new_page()
+            try:
+                # page.set_viewport_size({"width": 1920, "height": 1080})
+                page.goto("https://www.doubao.com/chat/")
+                page.on("response", self.handle_response)  # Register the handler
+                return self.handle_data(page, question)
+            finally:
+                page.close()
 
 
 if __name__ == '__main__':
