@@ -133,9 +133,9 @@ class YuanBao:
                 url = a_tag.get_attribute("dt-ext6")
                 # 提取标题：a标签内 class="search-view-card__title" 的div文本（标题容器）
                 title_elem = a_tag.query_selector(".hyc-common-markdown__ref_card-title")  # 定位标题元素
-                source_elem = a_tag.query_selector(".hyc-common-markdown__ref_card-foot__txt")  # 定位来源元素
-                source = source_elem.inner_text().strip() if source_elem else "无来源"  # 处理标题为空的情况
                 title = title_elem.text_content().strip() if title_elem else "无标题"  # 处理标题为空的情况
+                source_elem = a_tag.query_selector(".hyc-common-markdown__ref_card-foot__txt")  # 定位来源元素
+                source = source_elem.inner_text().strip() if source_elem else "无来源"  # 处理来源为空的情况
                 dict_ = {}
                 dict_['title'] = title
                 dict_['url'] = url

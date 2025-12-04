@@ -82,10 +82,10 @@ class DeepSeek:
                 for a_tag in a_tags:
                     # 提取链接：a标签的href属性
                     url = a_tag.get_attribute("href")
-                    source = a_tag.query_selector('.site_logo_back + span').text_content()
-                    # 提取标题：a标签内 class="search-view-card__title" 的div文本（标题容器）
                     title_elem = a_tag.query_selector("div.search-view-card__title")  # 定位标题元素
                     title = title_elem.text_content().strip() if title_elem else "无标题"  # 处理标题为空的情况
+                    source_elem = a_tag.query_selector('.site_logo_back + span')
+                    source = source_elem.text_content().strip() if source_elem else "无来源"  # 处理来源为空的情况
                     dict_ = {}
                     dict_['title'] = title
                     dict_['url'] = url
