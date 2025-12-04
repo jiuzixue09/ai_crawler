@@ -133,10 +133,13 @@ class YuanBao:
                 url = a_tag.get_attribute("dt-ext6")
                 # 提取标题：a标签内 class="search-view-card__title" 的div文本（标题容器）
                 title_elem = a_tag.query_selector(".hyc-common-markdown__ref_card-title")  # 定位标题元素
+                source_elem = a_tag.query_selector(".hyc-common-markdown__ref_card-foot__txt")  # 定位来源元素
+                source = source_elem.inner_text().strip() if source_elem else "无来源"  # 处理标题为空的情况
                 title = title_elem.text_content().strip() if title_elem else "无标题"  # 处理标题为空的情况
                 dict_ = {}
                 dict_['title'] = title
                 dict_['url'] = url
+                dict_['source'] = source
                 list_.append(dict_)
                 dict_final['list'] = list_
 
@@ -162,6 +165,6 @@ if __name__ == '__main__':
     crawler_util.headless = False
     yb = YuanBao()
 
-    q = "消费者对新能源汽车的续航焦虑如何缓解？"
+    q = "上海现在换电车还有什么官方补贴？"
     rs = yb.run_once(q)
     print(rs)

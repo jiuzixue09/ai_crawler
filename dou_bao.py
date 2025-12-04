@@ -68,8 +68,10 @@ class DouBao:
             url = a_tag.get_attribute("href")
             # 提取标题：a标签内 class="search-view-card__title" 的div文本（标题容器）
             title_elem = a_tag.query_selector('//div[contains(@class,"search-item-title")]')  # 定位标题元素
+            source_elem = a_tag.query_selector('//span[contains(@class,"footer-title")]')
             title = title_elem.text_content().strip() if title_elem else "无标题"  # 处理标题为空的情况
-            dict_ = {'title': title, 'url': url}
+            source = source_elem.text_content() if source_elem else ''
+            dict_ = {'title': title, 'url': url, 'source': source}
             list_.append(dict_)
 
     def handle_data(self, page, question):
