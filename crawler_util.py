@@ -7,7 +7,7 @@ from datetime import datetime
 from uuid import uuid1
 
 import requests
-from playwright.sync_api import Page
+from playwright.async_api import Page
 
 # 隧道域名:端口号
 tunnel = "f679.kdltps.com:15818"
@@ -93,12 +93,13 @@ def find_key_in_json(obj, target_key, found_values=None):
                 find_key_in_json(item, target_key, found_values)
     return found_values
 
-def select_drop_down_item(page: Page, button_class_name, class_name=None, text_name=None):
+async def select_drop_down_item(page: Page, button_class_name, class_name=None, text_name=None):
 
-    button = page.wait_for_selector(button_class_name,timeout=5000)
-    if text_name not in button.text_content().strip():
-        button.click()
+    button = await page.wait_for_selector(button_class_name,timeout=5000)
+    content = await button.text_content()
+    if text_name not in content.strip():
+        await button.click()
 
         button = page.locator(class_name,has_text=text_name)
-        button.wait_for(state="visible")
-        button.click()
+        await button.wait_for(state="visible")
+        await button.click()

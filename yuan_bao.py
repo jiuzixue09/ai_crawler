@@ -1,7 +1,6 @@
-import atexit
-import time
+import asyncio
 
-from playwright.sync_api import sync_playwright
+from playwright.async_api import async_playwright
 from playwright_stealth import Stealth
 
 import crawler_util
@@ -12,28 +11,34 @@ class YuanBao:
         self.context.close()
         self.playwright.stop()
 
-    def __init__(self):
+    async def create_playwright(self):
+        playwright = await async_playwright().start()
+
         storage_state = "cookies/yuanbao/yuanbao_1.json"
-        playwright = sync_playwright().start()
-        browser = playwright.chromium.launch(headless=crawler_util.headless)
-        context = browser.new_context(storage_state=storage_state,
+
+        browser = await playwright.chromium.launch(headless=crawler_util.headless)
+        context = await browser.new_context(storage_state=storage_state,
                                       user_agent=crawler_util.get_random_user_agent())
 
-        Stealth().apply_stealth_sync(context)
+        await Stealth().apply_stealth_async(context)
 
         self.context = context
         self.playwright = playwright
+
+
+    def __init__(self):
+        self.context = None
+        self.playwright = None
         self.share_id = None
+        self.inited = False
 
-        atexit.register(self.cleanup_function)
 
-
-    def handle_response(self,response):
+    async def handle_response(self,response):
         # https://yuanbao.tencent.com/api/conversations/v2/share
         if "api/conversations/v2/share" in response.url and response.status == 200:
             print(f"Intercepted API response: {response.url}")
             try:
-                res = response.json()
+                res = await response.json()
                 if res:
                     if 'shareId' in res:
                         self.share_id = res['shareId']
@@ -44,115 +49,128 @@ class YuanBao:
                         if data and 'share_id' in data:
                             self.share_id = data['share_id']
             except Exception as e:
+                raise e
                 print(e)
 
-    def run_once(self, question: str) -> dict:
-        page = self.context.new_page()
-        try:
+    async def run_once(self, question: str) -> dict:
+        if not self.inited:
+            await self.create_playwright()
+            self.inited = True
 
-            page.goto("https://yuanbao.tencent.com/")
+        async with await self.context.new_page() as page:
+            try:
+                await page.goto("https://yuanbao.tencent.com/")
 
-            page.on("response", self.handle_response)  # Register the handler
-            page.on("dialog", lambda dialog: dialog.accept())
-            return self.handle_data(page, question)
-        finally:
-            page.close()
+                page.on("response", self.handle_response)  # Register the handler
+                page.on("dialog", lambda dialog: dialog.accept())
+                return await self.handle_data(page, question)
+            except Exception as e:
+                raise e
+                print(e)
 
 
-    def handle_data(self, page, question: str) -> dict:
+
+    async def handle_data(self, page, question: str) -> dict:
 
         model_name = 'DeepSeek'
         deep_think = True
         internet_search = True
         internet_search_name = 'Auto'
 
-        crawler_util.select_drop_down_item(page,
-                                           '[dt-button-id="model_switch"]',
-                                           'div.drop-down-item__name',
-                                           model_name)
+        await crawler_util.select_drop_down_item(page,
+                                                         '[dt-button-id="model_switch"]',
+                                                         'div.drop-down-item__name',
+                                                         model_name)
 
-        deep_think_button = page.wait_for_selector('[dt-button-id="deep_think"]', timeout=10000)
-        if deep_think and 'checked' not in deep_think_button.get_attribute("class").strip():
-            deep_think_button.click()
+        if deep_think :
+            deep_think_button = await page.wait_for_selector('[dt-button-id="deep_think"]', timeout=10000)
+            class_name = await deep_think_button.get_attribute("class")
+            if 'checked' not in class_name.strip():
+                await deep_think_button.click()
 
-        online_search_button = page.wait_for_selector('[dt-button-id="online_search"]', timeout=10000)
-        if internet_search and 'checked' not in online_search_button.get_attribute("class").strip():
-            online_search_button.click()
+        if internet_search:
+            online_search_button = await page.wait_for_selector('[dt-button-id="online_search"]', timeout=10000)
+            class_name = await online_search_button.get_attribute("class")
+            if 'checked' not in class_name.strip():
+                await online_search_button.click()
 
-        if page.locator('div.yb-switch-internet-search-btn__right').is_visible():
-            crawler_util.select_drop_down_item(page,
+        if await page.locator('div.yb-switch-internet-search-btn__right').is_visible():
+            await crawler_util.select_drop_down_item(page,
                                                'div.yb-switch-internet-search-btn__right',
                                                'div.drop-down-item__name',
                                                internet_search_name)
 
         textarea = page.locator('div.ql-editor')
-        textarea.fill(question)
+        await textarea.fill(question)
 
-        page.wait_for_timeout(100)
-        page.locator("#yuanbao-send-btn").click()
+        await page.wait_for_timeout(100)
+        await page.locator("#yuanbao-send-btn").click()
 
-        share_button = page.wait_for_selector('.agent-chat__toolbar_new .agent-chat__toolbar__share', timeout=100 * 1000)
+        share_button = await page.wait_for_selector('.agent-chat__toolbar_new .agent-chat__toolbar__share', timeout=100 * 1000)
 
         markdown_divs = page.locator('div.hyc-component-reasoner__text')
-        if not markdown_divs.is_visible():
+        if not await markdown_divs.is_visible():
             markdown_divs = page.locator('.hyc-component-deepsearch-cot > .hyc-content-md-done')
 
         # 获取第二个元素的文本内容（不包含 HTML 标签）
-        article = markdown_divs.inner_text()
+        article = await markdown_divs.inner_text()
 
         dict_final = {'status': '0', 'article': article}
         list_ = []
 
         element = page.locator(".agent-chat__search-guid-tool__source")
         try:
-            element.wait_for(state='visible', timeout=60 * 1000) #这行代码主要是让程序休眠时间一段时间，防止账号被封
+            await element.wait_for(state='visible', timeout=60 * 1000) #这行代码主要是让程序休眠时间一段时间，防止账号被封
         except Exception as e:
             print(e)
 
-        if element and element.is_visible():
-            element.click()
+        if element and await element.is_visible():
+            await element.click()
             # 3. 5秒内等待 div.dc433409 加载，超时则抛TimeoutError
-            target_div = page.wait_for_selector(
+            target_div = await page.wait_for_selector(
                 selector='[id="chatReferenceList"] ul',  # 目标元素选择器
                 timeout=5000  # 超时时间：5000毫秒（5秒）
             )
 
-            client = page.context.new_cdp_session(page)
-
-            # Set the zoom level (e.g., 0.75 for 75% zoom, simulating Ctrl -)
-            client.send("Emulation.setPageScaleFactor", {"pageScaleFactor": 0.5})
-
-            page.screenshot(path="full_page.png", full_page=True)
+            # page.screenshot(path="full_page.png", full_page=True)
 
             # 定位目标div下所有 <a> 标签（即包含链接和标题的标签）
-            a_tags = target_div.query_selector_all("li")
+            a_tags = await target_div.query_selector_all("li")
 
             # 遍历a标签，提取链接和标题
             for a_tag in a_tags:
                 # 提取链接：a标签的href属性
-                url = a_tag.get_attribute("dt-ext6")
+                url = await a_tag.get_attribute("dt-ext6")
                 # 提取标题：a标签内 class="search-view-card__title" 的div文本（标题容器）
-                title_elem = a_tag.query_selector(".hyc-common-markdown__ref_card-title")  # 定位标题元素
-                title = title_elem.text_content().strip() if title_elem else "无标题"  # 处理标题为空的情况
-                source_elem = a_tag.query_selector(".hyc-common-markdown__ref_card-foot__txt")  # 定位来源元素
-                source = source_elem.inner_text().strip() if source_elem else "无来源"  # 处理来源为空的情况
-                dict_ = {}
-                dict_['title'] = title
-                dict_['url'] = url
-                dict_['source'] = source
+                title_elem = await a_tag.query_selector(".hyc-common-markdown__ref_card-title")  # 定位标题元素
+
+                if title_elem:
+                    title = await title_elem.text_content()
+                    title = title.strip()
+                else:
+                    title = '无标题'
+
+                source_elem = await a_tag.query_selector(".hyc-common-markdown__ref_card-foot__txt")  # 定位来源元素
+                if source_elem:
+                    source = await source_elem.text_content()
+                    source = source.strip()
+                else:
+                    source = '无来源'
+
+                dict_ = {'title': title, 'url': url, 'source': source}
                 list_.append(dict_)
                 dict_final['list'] = list_
 
-        share_button.click()
-        copy_button = page.wait_for_selector(
+        await share_button.click()
+        copy_button = await page.wait_for_selector(
             '.agent-chat__share-bar__content__center .agent-chat__share-bar__item__logo:first-child')
 
         for i in range(1, 5):
             if self.share_id:
                 break
             else:
-                time.sleep(i)
-                copy_button.click()
+                await asyncio.sleep(i)
+                await copy_button.click()
 
         if self.share_id:
             share_link = f'https://yb.tencent.com/s/{self.share_id}'
@@ -161,10 +179,13 @@ class YuanBao:
         return dict_final
 
 
-if __name__ == '__main__':
+async def main():
     crawler_util.headless = False
     yb = YuanBao()
 
     q = "上海现在换电车还有什么官方补贴？"
-    rs = yb.run_once(q)
+    rs = await yb.run_once(q)
     print(rs)
+
+if __name__ == '__main__':
+    asyncio.run(main())
