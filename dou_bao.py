@@ -48,10 +48,11 @@ class DouBao:
             timeout=5000  # 超时时间：5000毫秒（5秒）
         )
 
-        await page.screenshot(path="full_page.png", full_page=True)
+        # await page.screenshot(path="full_page.png", full_page=True)
 
         # 定位目标div下所有 <a> 标签（即包含链接和标题的标签）
-        a_tags = await target_div.query_selector('../ ..').query_selector_all('[data-testid="search-text-item"] a ')
+        a_tags = await target_div.query_selector('../ ..')
+        a_tags = await a_tags.query_selector_all('[data-testid="search-text-item"] a ')
         # think-block-container
 
         # 遍历a标签，提取链接和标题
@@ -60,9 +61,20 @@ class DouBao:
             url = await a_tag.get_attribute("href")
             # 提取标题：a标签内 class="search-view-card__title" 的div文本（标题容器）
             title_elem = await a_tag.query_selector('//div[contains(@class,"search-item-title")]')  # 定位标题元素
-            title = await title_elem.text_content().strip() if title_elem else "无标题"  # 处理标题为空的情况
+            if title_elem:
+                title = await title_elem.text_content()
+                title = title.strip()
+            else:
+                title = '无标题'
+
+
             source_elem = await a_tag.query_selector('//span[contains(@class,"footer-title")]')
-            source = await source_elem.text_content() if source_elem else '无来源'
+            if source_elem:
+                source = await source_elem.text_content()
+                source = source.strip()
+            else:
+                source = '无来源'
+
             dict_ = {'title': title, 'url': url, 'source': source}
             list_.append(dict_)
 
