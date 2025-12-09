@@ -1,21 +1,9 @@
 import asyncio
-import json
 import os
 import random
-import sys
-import threading
-import time
-from datetime import datetime
 
-import bai_du
-import chat_gpt
-import crawler_util
-import deepseek
-import dou_bao
-import excel_util
-import logging_config
-import yuan_bao
-
+from spider import deepseek, yuan_bao, chat_gpt, dou_bao, bai_du
+from util import excel_util, crawler_util, logging_config
 
 
 async def handle(file_path, output_path, selected):
@@ -24,7 +12,7 @@ async def handle(file_path, output_path, selected):
 
 
     if selected == 'all':
-        site_crawlers = [bai_du.BaiDu, deepseek.DeepSeek, dou_bao.DouBao, chat_gpt.ChatGpt, yuan_bao.YuanBao]
+        site_crawlers = [bai_du.BaiDu, deepseek.DeepSeek, dou_bao.DouBao, yuan_bao.YuanBao] #, chat_gpt.ChatGpt
     else:
         site_crawlers = [site_map.get(selected)]
 
@@ -69,7 +57,7 @@ async def search(questions, output_path, site_crawler):
 if __name__ == '__main__':
     # args = sys.argv
     crawler_util.headless = False
-    args = ['','questions.txt',os.getcwd(),'baidu']
+    args = ['','questions.txt',os.getcwd(),'all']
 
     log_dir = os.path.join(os.getcwd(), 'log')
     os.makedirs(log_dir, exist_ok=True)

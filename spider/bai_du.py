@@ -6,7 +6,7 @@ import requests
 from playwright.async_api import async_playwright
 from playwright_stealth.stealth import Stealth
 
-import crawler_util
+from util import crawler_util
 
 
 class BaiDu:
@@ -92,7 +92,7 @@ class BaiDu:
             await crawler_util.select_drop_down_item(page,
                                                '.model-select-toggle',
                                                '.input-capsules-model-list-item-title',
-                                               model_name)
+                                                     model_name)
 
 
             online_search_button = await page.wait_for_selector('.cos-switcher', timeout=10000)
@@ -129,7 +129,7 @@ class BaiDu:
 
         article = '\n'.join([await e.inner_text() for e in entrys])
 
-        dict_final = {'status': '0', 'article': article}
+        dict_final = {'runStatus': 1, 'article': article}
         list_ = []
 
         # page.screenshot(path="full_page.png", full_page=True)

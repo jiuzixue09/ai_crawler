@@ -3,7 +3,7 @@ import asyncio
 from playwright.async_api import async_playwright
 from playwright_stealth import Stealth
 
-import crawler_util
+from util import crawler_util
 
 
 class YuanBao:
@@ -18,7 +18,7 @@ class YuanBao:
 
         browser = await playwright.chromium.launch(headless=crawler_util.headless)
         context = await browser.new_context(storage_state=storage_state,
-                                      user_agent=crawler_util.get_random_user_agent())
+                                            user_agent=crawler_util.get_random_user_agent())
 
         await Stealth().apply_stealth_async(context)
 
@@ -80,7 +80,7 @@ class YuanBao:
         await crawler_util.select_drop_down_item(page,
                                                          '[dt-button-id="model_switch"]',
                                                          'div.drop-down-item__name',
-                                                         model_name)
+                                                 model_name)
 
         if deep_think :
             deep_think_button = await page.wait_for_selector('[dt-button-id="deep_think"]', timeout=10000)
@@ -98,7 +98,7 @@ class YuanBao:
             await crawler_util.select_drop_down_item(page,
                                                'div.yb-switch-internet-search-btn__right',
                                                'div.drop-down-item__name',
-                                               internet_search_name)
+                                                     internet_search_name)
 
         textarea = page.locator('div.ql-editor')
         await textarea.fill(question)
@@ -115,7 +115,7 @@ class YuanBao:
         # 获取第二个元素的文本内容（不包含 HTML 标签）
         article = await markdown_divs.inner_text()
 
-        dict_final = {'status': '0', 'article': article}
+        dict_final = {'runStatus': 1, 'article': article}
         list_ = []
 
         element = page.locator(".agent-chat__search-guid-tool__source")

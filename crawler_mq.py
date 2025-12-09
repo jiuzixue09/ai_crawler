@@ -4,20 +4,12 @@ import random
 import sys
 import time
 
-from time import sleep
-
 import requests
-from playwright.sync_api import sync_playwright
 
-import crawler_util
-import logging_config
+from util import crawler_util, logging_config
 from CosService import CosService
 from RabbitReceiveMq import RabbitReceiveMq
-import bai_du
-import deepseek
-import dou_bao
-import yuan_bao
-import chat_gpt
+from spider import deepseek, yuan_bao, chat_gpt, dou_bao, bai_du
 import configparser
 
 

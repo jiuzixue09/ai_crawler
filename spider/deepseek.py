@@ -2,7 +2,8 @@ import asyncio
 
 from playwright.async_api import async_playwright
 from playwright_stealth import Stealth
-import crawler_util
+from util import crawler_util
+
 
 class DeepSeek:
 
@@ -54,7 +55,7 @@ class DeepSeek:
 
         article = await markdown_divs.pop().inner_text()
 
-        dict_final = {'status': '0', 'article': article}
+        dict_final = {'runStatus': 1, 'article': article}
         list_ = []
         source_element = page.locator(
             "div.ds-scroll-area div.ds-message > div > div:has(.site_logo_back)"

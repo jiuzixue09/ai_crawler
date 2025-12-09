@@ -3,7 +3,7 @@ import asyncio
 from playwright.async_api import async_playwright
 from playwright_stealth import Stealth
 
-import crawler_util
+from util import crawler_util
 
 
 class DouBao:
@@ -102,7 +102,7 @@ class DouBao:
             # waiting til the share button available
             timeout=100000  # 100秒超时
         )
-        dict_final = {'status': 0, 'article': ''}
+        dict_final = {'runStatus': 1, 'article': ''}
 
         list_ = []
 

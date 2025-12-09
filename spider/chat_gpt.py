@@ -1,7 +1,7 @@
 import asyncio
 
 from playwright.async_api import async_playwright
-import crawler_util
+from util import crawler_util
 
 
 class ChatGpt:
@@ -24,7 +24,7 @@ class ChatGpt:
 
         if storage_state:
             context = await browser.new_context(storage_state=storage_state,
-                                            user_agent=crawler_util.get_random_user_agent())
+                                                user_agent=crawler_util.get_random_user_agent())
         else:
             context = await browser.new_context(user_agent=crawler_util.get_random_user_agent())
 
@@ -57,7 +57,7 @@ class ChatGpt:
         await crawler_util.select_drop_down_item(page,
                                            '#composer-plus-btn',
                                            '.flex .truncate',
-                                           model_name)
+                                                 model_name)
 
         textarea = page.locator('#prompt-textarea')
         await textarea.fill(question)
@@ -76,7 +76,7 @@ class ChatGpt:
         # 获取第二个元素的文本内容（不包含 HTML 标签）
         article = await markdown_divs.inner_text()
 
-        dict_final = {'status': '0', 'article': article}
+        dict_final = {'runStatus': 1, 'article': article}
         list_ = []
 
         element = await page.wait_for_selector(
