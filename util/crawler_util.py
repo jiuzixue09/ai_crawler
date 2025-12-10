@@ -46,12 +46,12 @@ def local_ip():
     return local_ip_address
 
 
-def image_save_as(page: Page, screenshot_dir=os.path.join(os.getcwd(), 'screenshot')):
+async def image_save_as(page: Page, screenshot_dir=os.path.join(os.getcwd(), 'screenshot')):
     p = os.path.join(screenshot_dir, datetime.now().strftime('%Y-%m-%d'))
     os.makedirs(p, exist_ok=True)
     file_name = uuid1().hex + '.png'
     full_path = os.path.join(p,file_name)
-    page.screenshot(path= full_path, full_page=True)
+    await page.screenshot(path= full_path, full_page=True)
     return full_path
 
 def public_ip():

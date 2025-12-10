@@ -132,8 +132,8 @@ class DouBao:
             print(e)
 
         await page.set_viewport_size({"width": 1920, "height": 1080})
-        # screenshot = crawler_util.image_save_as(page)
-        # dict_final['screenshot'] = screenshot
+        screenshot = await crawler_util.image_save_as(page)
+        dict_final['screenshot'] = screenshot
 
         # share_element = page.locator('div.message-action-button-main [data-testid="message_action_share"]')
         # share_element.click(timeout=5000)

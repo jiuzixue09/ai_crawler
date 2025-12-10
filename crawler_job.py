@@ -19,12 +19,9 @@ class CrawlerJob:
         self.logging = logging_config.setup_logger('log/crawler-job.log', self.__class__.__name__)
 
         #4: chat_gpt.ChatGpt,
-        # site_map = {1: dou_bao.DouBao, 2: yuan_bao.YuanBao, 3: deepseek.DeepSeek, 5: bai_du.BaiDu}
-        site_map = {5: bai_du.BaiDu}
+        site_map = {1: dou_bao.DouBao, 2: yuan_bao.YuanBao, 3: deepseek.DeepSeek, 5: bai_du.BaiDu}
+        # site_map = {1: dou_bao.DouBao}
 
-        cos_config = configparser.ConfigParser()
-        cos_config.read(f'config/{env}/config-oss.ini')
-        self.o = CosService(cos_config)
 
         api_config = configparser.ConfigParser()
         api_config.read(f'config/{env}/config.ini')
@@ -39,7 +36,7 @@ class CrawlerJob:
         tasks = []
         for site_id,site_class in self.site_map.items():
             q = asyncio.Queue(maxsize=20)
-            spider_task = SpiderTask()
+            spider_task = SpiderTask(env)
             t1 = asyncio.create_task(spider_task.task_producer(self.query_api,site_id, q))
 
             t2 = asyncio.create_task(spider_task.task_consumer(self.update_api,site_class(), q))
