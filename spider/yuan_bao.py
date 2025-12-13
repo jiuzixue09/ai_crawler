@@ -89,10 +89,8 @@ class YuanBao:
                 await deep_think_button.click()
 
         if internet_search:
-            online_search_button = await page.wait_for_selector('[dt-button-id="online_search"]', timeout=10000)
-            class_name = await online_search_button.get_attribute("class")
-            if 'checked' not in class_name.strip():
-                await online_search_button.click()
+            online_search_button = await page.wait_for_selector('[dt-button-id="internet_search"]', timeout=10000)
+            await online_search_button.click()
 
         if await page.locator('div.yb-switch-internet-search-btn__right').is_visible():
             await crawler_util.select_drop_down_item(page,

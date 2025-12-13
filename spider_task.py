@@ -1,4 +1,5 @@
 import asyncio
+import json
 import uuid
 from datetime import datetime
 
@@ -60,9 +61,9 @@ class SpiderTask:
                     json_data = {'runStatus': 0, 'taskid': task_id}
                     self.logging.error(e)
 
+
                 res = requests.post(update_api,json=json_data)
-                print(res.content)
-                self.logging.info(res.content)
+                self.logging.info(json.loads(res.content))
             except Exception as e:
                 self.logging.error(e)
 

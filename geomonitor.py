@@ -1,6 +1,7 @@
 import asyncio
 import os
 import random
+import sys
 
 from spider import deepseek, yuan_bao, chat_gpt, dou_bao, bai_du
 from util import excel_util, crawler_util, logging_config
@@ -55,9 +56,9 @@ async def search(questions, output_path, site_crawler):
 
 
 if __name__ == '__main__':
-    # args = sys.argv
-    crawler_util.headless = False
-    args = ['','questions.txt',os.getcwd(),'all']
+    args = sys.argv
+    # crawler_util.headless = False
+    # args = ['','questions.txt',os.getcwd(),'all']
 
     log_dir = os.path.join(os.getcwd(), 'log')
     os.makedirs(log_dir, exist_ok=True)
