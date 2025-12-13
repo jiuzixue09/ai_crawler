@@ -1,5 +1,6 @@
 import asyncio
 import json
+import random
 import uuid
 from datetime import datetime
 
@@ -7,6 +8,7 @@ import requests
 import configparser
 
 from CosService import CosService
+from spider import deepseek, dou_bao, yuan_bao
 from util import logging_config
 
 
@@ -64,6 +66,12 @@ class SpiderTask:
 
                 res = requests.post(update_api,json=json_data)
                 self.logging.info(json.loads(res.content))
+
+                if spider.__class__ == yuan_bao.YuanBao:
+                    await asyncio.sleep(random.randint(30, 60))
+                elif spider.__class__ in [deepseek.DeepSeek, dou_bao.DouBao]:
+                    await asyncio.sleep(random.randint(5, 10))
+
             except Exception as e:
                 self.logging.error(e)
 
