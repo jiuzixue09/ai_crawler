@@ -1,6 +1,6 @@
 import asyncio
 
-from playwright.async_api import async_playwright
+from playwright.async_api import async_playwright, Page
 from playwright_stealth import Stealth
 
 from util import crawler_util
@@ -78,7 +78,7 @@ class DouBao:
             dict_ = {'title': title, 'url': url, 'source': source}
             list_.append(dict_)
 
-    async def handle_data(self, page, question):
+    async def handle_data(self, page:Page, question):
         deep_thinking_button = await page.wait_for_selector('[data-testid="use-deep-thinking-switch-btn"] > button',
                                                       timeout=30000)
 
@@ -90,15 +90,22 @@ class DouBao:
         await page.wait_for_timeout(100)
         await page.locator("#flow-end-msg-send").click()
 
+        semi = await page.query_selector('.semi-modal-confirm-content')
+        if semi and semi.is_visible():
+            raise Exception('semi modal confirm')
+        captcha = await page.query_selector('#captcha_container')
+        if captcha and captcha.is_visible():
+            raise Exception('semi modal confirm')
+
         # 等待分享元素加载，设置超时时间为100秒(100000毫秒)
         # page.wait_for_selector(
         #     'div.message-action-button-main [data-testid="message_action_share"]',
         #     # waiting til the share button available
         #     timeout=100000  # 100秒超时
         # )
-        # 等待分享元素加载，设置超时时间为100秒(100000毫秒)
+        # 等待来源元素加载，设置超时时间为100秒(100000毫秒)
         await page.wait_for_selector(
-            '[data-testid="suggest_message_list"]',
+            '[data-testid="search-reference-ui"]',
             # waiting til the share button available
             timeout=100000  # 100秒超时
         )
@@ -115,11 +122,17 @@ class DouBao:
                 '[data-testid="receive_message"] [data-testid="message_content"] > div > div')
             node_size = len(nodes)
             receive_message = nodes[node_size - 2]
+            reference_element = await nodes[node_size - 1].query_selector('[data-testid="search-reference-ui"]')
         else:
-            receive_message = await nodes[node_size - 2].wait_for_selector(
-                ' > [data-testid="message_text_content"].flow-markdown-body')
+            try:
+                receive_message = await nodes[node_size - 2].wait_for_selector(
+                    ' > [data-testid="message_text_content"].flow-markdown-body', timeout=5000)
+                reference_element = await nodes[node_size - 1].query_selector('[data-testid="search-reference-ui"]')
+            except Exception as e:
+                receive_message = await nodes[0].wait_for_selector(
+                    ' > [data-testid="message_text_content"].flow-markdown-body')
+                reference_element = await page.query_selector('[data-testid="search-reference-ui"]')
 
-        reference_element = await nodes[node_size - 1].query_selector('[data-testid="search-reference-ui"]')
 
         # 获取文本内容（不包含 HTML 标签）
         article = await receive_message.inner_text()
@@ -188,7 +201,7 @@ async def main():
 
     db = DouBao()
 
-    q = "上海现在换电车还有什么官方补贴？"
+    q = "搭载“固态电池”的版本，冬季续航衰减会明显改善吗？"
     rs = await db.run_once(q)
     print(rs)
 

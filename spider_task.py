@@ -34,7 +34,7 @@ class SpiderTask:
                 await asyncio.sleep(60 * 60)
             else:
                 for task in task_list:
-                    t = {'question': task['question'],
+                    t = {'question': task['question'],'model_id':model_id,
                          'task_id': task['taskDetailId']}
                     self.logging.info(t)
                     await tasks.put(t)
