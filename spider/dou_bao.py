@@ -90,6 +90,7 @@ class DouBao:
         await page.wait_for_timeout(100)
         await page.locator("#flow-end-msg-send").click()
 
+        await page.wait_for_timeout(2000)
         semi = await page.query_selector('.semi-modal-confirm-content')
         if semi and semi.is_visible():
             raise Exception('semi modal confirm')
